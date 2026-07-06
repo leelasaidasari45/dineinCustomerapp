@@ -29,13 +29,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
 
         {/* ── Logo ── */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
-          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200">
-            <UtensilsCrossed className="w-5.5 h-5.5 text-[#fc8019]" />
-          </div>
-          <span className="font-heading font-extrabold text-2xl tracking-tight text-white">
-            Zuno
-          </span>
+        <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
+          <img src="/logo.png" alt="Zuno Logo" className="h-12 w-auto object-contain group-hover:scale-105 transition-transform duration-200" />
         </Link>
 
         {/* ── Nav Links ── */}
