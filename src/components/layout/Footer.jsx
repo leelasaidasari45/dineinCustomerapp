@@ -62,15 +62,32 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-[#282c3f] text-sm md:text-base mb-4 uppercase tracking-wider">Available in:</h4>
             <ul className="space-y-2.5 text-sm font-medium">
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Bangalore</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Gurgaon</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Hyderabad</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Delhi</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Mumbai</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Pune</Link></li>
+              <li className="flex items-center justify-between gap-2 max-w-[150px]">
+                <span className="text-gray-400">Bangalore</span>
+                <span className="text-[10px] bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded-md font-bold scale-90">Soon</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 max-w-[150px]">
+                <span className="text-gray-400">Gurgaon</span>
+                <span className="text-[10px] bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded-md font-bold scale-90">Soon</span>
+              </li>
+              <li>
+                <Link to="/" className="text-[#282c3f] hover:text-[#fc8019] transition-colors font-bold">Hyderabad</Link>
+              </li>
+              <li className="flex items-center justify-between gap-2 max-w-[150px]">
+                <span className="text-gray-400">Delhi</span>
+                <span className="text-[10px] bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded-md font-bold scale-90">Soon</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 max-w-[150px]">
+                <span className="text-gray-400">Mumbai</span>
+                <span className="text-[10px] bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded-md font-bold scale-90">Soon</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 max-w-[150px]">
+                <span className="text-gray-400">Pune</span>
+                <span className="text-[10px] bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded-md font-bold scale-90">Soon</span>
+              </li>
             </ul>
             <button className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#93959f] text-xs font-semibold hover:border-[#282c3f] hover:text-[#282c3f] transition-all">
-              685 cities <span>▼</span>
+              1 city <span>▼</span>
             </button>
           </div>
 
