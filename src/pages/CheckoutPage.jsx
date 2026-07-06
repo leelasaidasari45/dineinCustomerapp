@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, MapPin, Clock, CreditCard, CheckCircle2, Leaf, Drumstick, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -28,10 +28,15 @@ function StepBadge({ number, label, active, done }) {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, customer } = useAuthStore();
   const { items, restaurantId, restaurantName, clearCart } = useCartStore();
   const { restaurant } = useRestaurant(restaurantId);
   const [showItems, setShowItems] = useState(false);
+
+  const queryParams = new URLSearchParams(location.search);
+  const initialTime = queryParams.get('time') || '';
+  const initialDate = queryParams.get('date') || '';
 
   const [arrivalInfo, setArrivalInfo] = useState(() => ({
     arrivalDate: getArrivalDate('+30'),
@@ -181,6 +186,8 @@ export default function CheckoutPage() {
               <ArrivalTimePicker
                 avgPrepMinutes={restaurant?.avg_prep_time_minutes || 20}
                 onChange={setArrivalInfo}
+                initialTime={initialTime}
+                initialDate={initialDate}
               />
             </div>
 

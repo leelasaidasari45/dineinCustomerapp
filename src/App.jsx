@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import AuthModal from './components/auth/AuthModal';
+import TableMate from './components/agent/TableMate';
 import HomePage from './pages/HomePage';
 import RestaurantPage from './pages/RestaurantPage';
 import CartPage from './pages/CartPage';
@@ -58,6 +59,7 @@ function AppContent() {
       <Footer />
       <AuthModal />
       <RatingBarrier />
+      <TableMate />
       <Toaster
         position="top-center"
         toastOptions={{

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, CalendarDays, Zap, CheckCircle2 } from 'lucide-react';
 import {
@@ -37,12 +37,122 @@ function ModeTab({ icon: Icon, label, sublabel, active, onClick }) {
   );
 }
 
-export default function ArrivalTimePicker({ avgPrepMinutes = 20, onChange }) {
-  const [mode, setMode]               = useState('quick');   // 'quick' | 'slot'
-  const [selectedQuick, setSelectedQuick] = useState('+30');
-  const [selectedExtended, setSelectedExtended] = useState('+90');
+// Dynamic slot generator (generates 30-minute intervals for the next 6 hours)
+const generateHalfHourSlots = (avgPrepMinutes) => {
+  const slots = [];
+  const now = new Date();
+  
+  // Earliest possible prep completion
+  const earliest = new Date(now.getTime() + avgPrepMinutes * 60 * 1000);
+  
+  // Round up to next 30-minute boundary
+  const start = new Date(earliest);
+  const minutes = start.getMinutes();
+  if (minutes > 0 && minutes <= 30) {
+    start.setMinutes(30, 0, 0);
+  } else {
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+  }
+  
+  // Generate 12 half-hour slots
+  for (let i = 0; i < 12; i++) {
+    const slotTime = new Date(start.getTime() + i * 30 * 60 * 1000);
+    const label = slotTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    slots.push({
+      label,
+      value: slotTime.getTime() // numeric timestamp value
+    });
+  }
+  return slots;
+};
+
+// Helper to parse initialTime and initialDate into a Date object
+const parseInitialTime = (timeStr, dateStr) => {
+  if (!timeStr) return null;
+  const now = new Date();
+  const target = new Date();
+
+  if (dateStr) {
+    const ds = dateStr.toLowerCase();
+    if (ds.includes('tomorrow')) {
+      target.setDate(now.getDate() + 1);
+    } else if (ds.includes('today')) {
+      // Keep today
+    } else {
+      // Try to parse using native Date parser
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        target.setDate(parsedDate.getDate());
+        target.setMonth(parsedDate.getMonth());
+        target.setFullYear(parsedDate.getFullYear());
+      }
+    }
+  }
+
+  const ts = timeStr.toLowerCase();
+  const match = ts.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (match) {
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2] || '0');
+    const ampm = match[3];
+
+    if (ampm === 'pm' && hours < 12) hours += 12;
+    if (ampm === 'am' && hours === 12) hours = 0;
+
+    target.setHours(hours, minutes, 0, 0);
+  }
+  return target;
+};
+
+export default function ArrivalTimePicker({ avgPrepMinutes = 20, onChange, initialTime, initialDate }) {
+  const slots = generateHalfHourSlots(avgPrepMinutes);
+
+  // Match slot based on initialTime/initialDate
+  const initialDateObj = parseInitialTime(initialTime, initialDate);
+  let matchedMode = 'quick';
+  let matchedQuick = '+30';
+  let matchedExtended = slots[0]?.value || '';
+
+  if (initialDateObj) {
+    const match = slots.find(s => {
+      const d = new Date(s.value);
+      return d.getHours() === initialDateObj.getHours() && 
+             Math.abs(d.getMinutes() - initialDateObj.getMinutes()) < 15 &&
+             d.getDate() === initialDateObj.getDate();
+    });
+
+    if (match) {
+      matchedMode = 'slot';
+      matchedExtended = match.value;
+    } else {
+      // Check if it fits quick slots
+      const diffMins = Math.round((initialDateObj.getTime() - Date.now()) / 60000);
+      if (diffMins > 0 && diffMins <= 60) {
+        matchedMode = 'quick';
+        if (diffMins <= 20) matchedQuick = '+15';
+        else if (diffMins <= 37) matchedQuick = '+30';
+        else if (diffMins <= 52) matchedQuick = '+45';
+        else matchedQuick = '+60';
+      }
+    }
+  }
+
+  const [mode, setMode]               = useState(matchedMode);
+  const [selectedQuick, setSelectedQuick] = useState(matchedQuick);
+  const [selectedExtended, setSelectedExtended] = useState(matchedExtended);
   const [customDate, setCustomDate]   = useState('');
   const [customTime, setCustomTime]   = useState('');
+
+  // Call onChange with initial values once when mounting
+  useEffect(() => {
+    const initDate = mode === 'quick' ? getArrivalDate(selectedQuick) : getArrivalDate(selectedExtended);
+    const initSlot = mode === 'quick' ? selectedQuick : selectedExtended;
+    onChange({ arrivalDate: initDate, slot: initSlot });
+  }, []);
 
   /* ── helpers ─────────────────────────────────────────── */
   const buildArrivalFromCustom = (dateStr, timeStr) => {
@@ -180,9 +290,9 @@ export default function ArrivalTimePicker({ avgPrepMinutes = 20, onChange }) {
           >
             {/* Extended time options */}
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Select how far ahead</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Select your arrival slot</p>
               <div className="grid grid-cols-2 gap-2">
-                {EXTENDED_SLOTS.map((slot) => (
+                {slots.map((slot) => (
                   <motion.button
                     key={slot.value}
                     whileTap={{ scale: 0.97 }}
