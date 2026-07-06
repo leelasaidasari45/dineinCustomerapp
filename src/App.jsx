@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 import AuthModal from './components/auth/AuthModal';
 import HomePage from './pages/HomePage';
 import RestaurantPage from './pages/RestaurantPage';
@@ -46,12 +47,15 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-cream-100">
+    <div className="min-h-screen bg-cream-100 flex flex-col">
       <ScrollToTop />
       <Navbar />
-      <ErrorBoundary>
-        <AnimatedRoutes />
-      </ErrorBoundary>
+      <div className="flex-grow">
+        <ErrorBoundary>
+          <AnimatedRoutes />
+        </ErrorBoundary>
+      </div>
+      <Footer />
       <AuthModal />
       <RatingBarrier />
       <Toaster
