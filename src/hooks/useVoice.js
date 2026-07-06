@@ -121,18 +121,40 @@ export function useVoice({ onResult, onEnd, onError }) {
     utterance.pitch = 1.05;
     utterance.volume = 1;
 
-    // Try to find a good voice for the language
+    // Try to find a good female voice for the language
     const voices = synthRef.current.getVoices();
-    // First priority: user-requested 'Sulafat' voice
-    let preferred = voices.find(v => v.name.toLowerCase().includes('sulafat'));
+    const langCode = LANG_MAP[lang]?.split('-')[0] || 'en';
+    const langVoices = voices.filter(v => v.lang.startsWith(langCode));
+
+    // List of known female voices or keywords in order of preference
+    const femaleKeywords = ['sulafat', 'zira', 'samantha', 'hazel', 'susan', 'karen', 'tessa', 'moira', 'veena', 'female', 'woman'];
     
-    if (!preferred) {
-      preferred = voices.find(v =>
-        v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en') && v.localService
-      ) || voices.find(v =>
-        v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en')
-      );
+    let preferred = null;
+
+    // 1. Try to find a female voice in the matching language
+    for (const keyword of femaleKeywords) {
+      preferred = langVoices.find(v => v.name.toLowerCase().includes(keyword));
+      if (preferred) break;
     }
+
+    // 2. If no female voice is found in that language, try to find any female voice globally
+    if (!preferred) {
+      for (const keyword of femaleKeywords) {
+        preferred = voices.find(v => v.name.toLowerCase().includes(keyword));
+        if (preferred) break;
+      }
+    }
+
+    // 3. Fallback: Google/Microsoft female-sounding defaults
+    if (!preferred) {
+      preferred = langVoices.find(v => v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('microsoft'));
+    }
+
+    // 4. Ultimate fallback: first available local service voice
+    if (!preferred) {
+      preferred = langVoices.find(v => v.localService) || langVoices[0] || voices[0];
+    }
+
     if (preferred) utterance.voice = preferred;
 
     utterance.onstart = () => setIsSpeaking(true);
