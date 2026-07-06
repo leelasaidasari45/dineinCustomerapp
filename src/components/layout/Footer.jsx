@@ -14,7 +14,7 @@ export default function Footer() {
           {/* Logo & Copyright Column */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <img src="/logo.png" alt="Zuno Logo" className="h-10 w-auto object-contain rounded-2xl" />
+              <img src="/logo.png" alt="Zuno Logo" className="h-10 w-auto object-contain rounded-lg" />
             </div>
             <p className="text-xs text-[#93959f]">
               © {currentYear} Zuno Limited
