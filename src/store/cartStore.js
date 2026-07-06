@@ -92,7 +92,7 @@ export const useCartStore = create(
       },
     }),
     {
-      name: 'dinein-cart',
+      name: 'zuno-cart',
       storage: createJSONStorage(() => localStorage),
       // Only persist plain data, not functions
       partialize: (state) => ({

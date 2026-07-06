@@ -34,7 +34,7 @@ export default function Navbar() {
             <UtensilsCrossed className="w-5.5 h-5.5 text-[#fc8019]" />
           </div>
           <span className="font-heading font-extrabold text-2xl tracking-tight text-white">
-            DineIn
+            Zuno
           </span>
         </Link>
 
