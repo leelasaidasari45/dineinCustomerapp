@@ -95,7 +95,7 @@ export default function HomePage() {
             >
               {[
                 { value: '0 min', label: 'Wait time' },
-                { value: '50%', label: 'Pay advance' },
+                { value: '0%', label: 'Booking fee' },
                 { value: '100%', label: 'Food ready' },
               ].map((stat) => (
                 <div key={stat.label} className="text-center min-w-[70px]">
