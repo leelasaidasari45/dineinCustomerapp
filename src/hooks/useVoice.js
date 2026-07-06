@@ -123,11 +123,16 @@ export function useVoice({ onResult, onEnd, onError }) {
 
     // Try to find a good voice for the language
     const voices = synthRef.current.getVoices();
-    const preferred = voices.find(v =>
-      v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en') && v.localService
-    ) || voices.find(v =>
-      v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en')
-    );
+    // First priority: user-requested 'Sulafat' voice
+    let preferred = voices.find(v => v.name.toLowerCase().includes('sulafat'));
+    
+    if (!preferred) {
+      preferred = voices.find(v =>
+        v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en') && v.localService
+      ) || voices.find(v =>
+        v.lang.startsWith(LANG_MAP[lang]?.split('-')[0] || 'en')
+      );
+    }
     if (preferred) utterance.voice = preferred;
 
     utterance.onstart = () => setIsSpeaking(true);
