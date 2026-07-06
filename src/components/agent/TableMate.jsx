@@ -356,7 +356,7 @@ export default function TableMate() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed bottom-[128px] right-12 z-50 w-[340px] sm:w-[380px] h-[520px] rounded-3xl overflow-hidden shadow-2xl border border-violet-800/40 flex flex-col"
+            className="fixed bottom-[128px] right-12 z-50 w-[340px] sm:w-[380px] h-[460px] max-h-[calc(100vh-160px)] rounded-3xl overflow-hidden shadow-2xl border border-violet-800/40 flex flex-col"
             style={{ background: 'linear-gradient(135deg, #0f0c29, #1a1040, #1e1b4b)' }}
           >
             {/* Header */}
