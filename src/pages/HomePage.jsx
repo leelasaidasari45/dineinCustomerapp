@@ -41,9 +41,15 @@ export default function HomePage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-full px-4 py-1.5 text-sm font-medium mb-6"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/35 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.08)] hover:shadow-[0_0_20px_rgba(245,158,11,0.18)] hover:border-amber-400 transition-all duration-300 mb-6 cursor-default select-none backdrop-blur-sm"
             >
-              <Zap className="w-3.5 h-3.5" />
+              <motion.span
+                animate={{ scale: [1, 1.25, 1], filter: ['drop-shadow(0 0 1px rgba(245,158,11,0.5))', 'drop-shadow(0 0 4px rgba(245,158,11,0.8))', 'drop-shadow(0 0 1px rgba(245,158,11,0.5))'] }}
+                transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+                className="flex items-center justify-center text-amber-400"
+              >
+                <Zap className="w-3.5 h-3.5 fill-amber-400" />
+              </motion.span>
               Pre-order & skip the wait
             </motion.div>
 
