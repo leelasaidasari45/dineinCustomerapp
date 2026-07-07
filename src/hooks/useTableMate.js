@@ -196,7 +196,12 @@ function fuzzyMatch(userQuery, restaurantName) {
   const q = userQuery.toLowerCase().replace(/[^a-z0-9]/g, '');
   const r = restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  if (q.includes(r) || r.includes(q)) return true;
+  if (q === r) return true;
+  if (q.includes(r)) return true;
+  if (q.length >= 3 && r.includes(q)) return true;
+
+  // Prefix match (only for queries at least 3 characters long to prevent matches on short greetings like 'hi')
+  if (q.length >= 3 && r.startsWith(q)) return true;
 
   // Soundex-like stripping for common Indian spellings (e.g. Shadhab vs Shadab)
   const stripH = s => s.replace(/h/g, '');
