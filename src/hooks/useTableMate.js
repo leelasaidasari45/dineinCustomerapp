@@ -77,6 +77,8 @@ const EMPTY_BOOKING = {
   total: 0,
   advance: 0,
   awaitingQtyFor: null,
+  foodConfirmed: false,
+  awaitingFoodConfirmation: false,
 };
 
 export function useTableMate({ onSpeak, onStateChange }) {
@@ -370,6 +372,20 @@ function fuzzyMatch(userQuery, restaurantName) {
     updateBooking(prev => {
       const next = { ...prev };
 
+      // Handle awaitingFoodConfirmation responses
+      if (prev.awaitingFoodConfirmation) {
+        const isThatIt = /\b(that's it|thats it|nothing else|no\b|nope\b|that is all|that's all|its enough|enough)\b/i.test(u);
+        const isAddMore = /\b(add more|want to add|yes\b|yeah\b|yep\b|more\b)\b/i.test(u);
+        
+        if (isThatIt) {
+          next.foodConfirmed = true;
+          next.awaitingFoodConfirmation = false;
+        } else if (isAddMore) {
+          // If they want to add more, transition to need_item to prompt them
+          next.awaitingFoodConfirmation = 'need_item';
+        }
+      }
+
       // If we were waiting for quantity of a specific item, extract it first
       if (prev.awaitingQtyFor) {
         const numWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
@@ -526,22 +542,44 @@ function fuzzyMatch(userQuery, restaurantName) {
       const foodNouns = ['biryani', 'idli', 'idly', 'dosa', 'pizza', 'burger', 'curry', 'rice', 'roti', 'naan', 'chicken', 'paneer', 'fish', 'salad', 'kebab', 'kabab', 'coffee', 'tea'];
       const hasFood = foodVerbs.some(v => u.includes(v)) || foodNouns.some(n => u.includes(n));
 
-      if (hasFood && !prev.items?.length) {
-        // Extract items from user text using fuzzy prefix match
+      if (hasFood) {
         const activeRestaurantId = next.restaurant?.id || prev.restaurant?.id;
         const menuItems = activeRestaurantId ? (menuCacheRef.current[activeRestaurantId] || []) : [];
-        const matchedItems = menuItems.filter(m => {
-          const itemClean = m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          // Check direct containment or prefix match of first 3 chars
-          return u.includes(itemClean) || 
-                 (itemClean.length >= 3 && u.includes(itemClean.slice(0, 3))) ||
-                 (itemClean.length >= 3 && u.split(/\s+/).some(w => w.startsWith(itemClean.slice(0, 3))));
-        });
+        
+        let matchedItems = [];
+        if (menuItems.length > 0) {
+          const genericWords = ['special', 'steamed', 'fresh', 'warm', 'with', 'ghee', 'spicy', 'plates', 'portions', 'order', 'want', 'like', 'give', 'add'];
+          const userWords = u.split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(w => w.length >= 3 && !genericWords.includes(w));
+          
+          const scored = menuItems.map(m => {
+            const itemWords = m.name.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(w => w.length >= 3 && !genericWords.includes(w));
+            let score = 0;
+            for (const uw of userWords) {
+              for (const iw of itemWords) {
+                if (uw === iw) {
+                  score += 10;
+                } else if (uw.length >= 4 && iw.startsWith(uw)) {
+                  score += 5;
+                } else if (iw.length >= 4 && uw.startsWith(iw)) {
+                  score += 5;
+                }
+              }
+            }
+            return { item: m, score };
+          });
+
+          const candidates = scored.filter(s => s.score > 0);
+          if (candidates.length > 0) {
+            const maxScore = Math.max(...candidates.map(c => c.score));
+            matchedItems = candidates.filter(c => c.score === maxScore).map(c => c.item);
+          }
+        }
 
         if (matchedItems.length > 0) {
-          next.items = matchedItems.map(m => {
+          const newItemsParsed = matchedItems.map(m => {
             const wordNums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-            const qtyMatch = u.match(new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`));
+            const qtyRegex = new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`);
+            const qtyMatch = u.match(qtyRegex);
             
             let qty = null;
             if (qtyMatch) {
@@ -550,9 +588,28 @@ function fuzzyMatch(userQuery, restaurantName) {
             }
             return { name: m.name, qty, price: m.price, menuItem: m };
           });
+
+          if (prev.items?.length > 0) {
+            const updatedItems = [...prev.items];
+            for (const ni of newItemsParsed) {
+              const existsIdx = updatedItems.findIndex(item => item.name === ni.name);
+              if (existsIdx !== -1) {
+                if (ni.qty !== null) {
+                  updatedItems[existsIdx].qty = ni.qty;
+                }
+              } else {
+                updatedItems.push(ni);
+              }
+            }
+            next.items = updatedItems;
+          } else {
+            next.items = newItemsParsed;
+          }
           next.itemError = null;
-        } else if (next.restaurant || prev.restaurant) {
-          // Food was requested but is not present on this restaurant's menu!
+          // Clear confirmation flags so we prompt them again for anything else
+          next.foodConfirmed = false;
+          next.awaitingFoodConfirmation = false;
+        } else if ((next.restaurant || prev.restaurant) && !prev.items?.length) {
           const nounMatch = foodNouns.find(n => u.includes(n));
           const verbMatch = u.match(/(?:order|want|like|give|add)\s+([a-z0-9]+)/i);
           const attemptedFood = nounMatch || verbMatch?.[1];
@@ -681,9 +738,46 @@ function fuzzyMatch(userQuery, restaurantName) {
       return;
     }
 
+    // Check if we are waiting for a food name after "I want to add more"
+    if (bd.awaitingFoodConfirmation === 'need_item') {
+      const errorMsg = {
+        en: "Okay, tell me what you want to add.",
+        te: "సరే, మీరు ఏమి యాడ్ చేయాలనుకుంటున్నారో చెప్పండి.",
+        hi: "ठीक है, मुझे बताएं कि आप क्या जोड़ना चाहते हैं।"
+      };
+      const txt = errorMsg[currentLang] || errorMsg.en;
+      
+      addMessage('agent', txt, currentLang);
+      setAgentState(AGENT_STATE.SPEAKING);
+      onSpeak?.(txt, currentLang, () => {
+        setAgentState(AGENT_STATE.LISTENING);
+      });
+      return;
+    }
+
     const hasAllQtys = bd.items?.length > 0 && bd.items.every(item => item.qty !== null);
 
-    if (bd.restaurant && hasAllQtys && bd.date && bd.time) {
+    // Ask if there is anything else to add before continuing
+    if (hasAllQtys && !bd.foodConfirmed) {
+      const errorMsg = {
+        en: `Anything else you want to add, or that's it?`,
+        te: `ఇంకేమైనా యాడ్ చేయాలా, లేక ఇంతేనా?`,
+        hi: `कुछ और जोड़ना चाहते हैं, या बस इतना ही?`
+      };
+      const txt = errorMsg[currentLang] || errorMsg.en;
+      
+      // Set flag to track confirmation next turn
+      updateBooking(prev => ({ ...prev, awaitingFoodConfirmation: true }));
+      
+      addMessage('agent', txt, currentLang);
+      setAgentState(AGENT_STATE.SPEAKING);
+      onSpeak?.(txt, currentLang, () => {
+        setAgentState(AGENT_STATE.LISTENING);
+      });
+      return;
+    }
+
+    if (bd.restaurant && hasAllQtys && bd.foodConfirmed && bd.date && bd.time) {
       const cartStore = useCartStore.getState();
       cartStore.clearCart();
 
