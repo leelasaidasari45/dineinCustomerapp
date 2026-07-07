@@ -76,7 +76,9 @@ function ruleEngine(history, ctx) {
   const fuzzyMatch = (q, r) => {
     const cleanQ = q.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanR = r.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (cleanQ.includes(cleanR) || cleanR.includes(cleanQ)) return true;
+    if (cleanQ === cleanR) return true;
+    if (cleanQ.includes(cleanR)) return true;
+    if (cleanQ.length >= 3 && cleanR.includes(cleanQ)) return true;
     const stripH = s => s.replace(/h/g, '');
     if (stripH(cleanQ) === stripH(cleanR)) return true;
     return false;
