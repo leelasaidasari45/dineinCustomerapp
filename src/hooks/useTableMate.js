@@ -76,6 +76,7 @@ const EMPTY_BOOKING = {
   specialInstructions: '',
   total: 0,
   advance: 0,
+  awaitingQtyFor: null,
 };
 
 export function useTableMate({ onSpeak, onStateChange }) {
@@ -369,6 +370,21 @@ function fuzzyMatch(userQuery, restaurantName) {
     updateBooking(prev => {
       const next = { ...prev };
 
+      // If we were waiting for quantity of a specific item, extract it first
+      if (prev.awaitingQtyFor) {
+        const numWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+        const numMatch = u.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/);
+        if (numMatch) {
+          const val = numMatch[1].toLowerCase();
+          const qtyVal = numWords[val] || parseInt(val) || 1;
+          
+          next.items = prev.items.map(item => 
+            item.name === prev.awaitingQtyFor ? { ...item, qty: qtyVal } : item
+          );
+          next.awaitingQtyFor = null;
+        }
+      }
+
       // Restaurant: if AI confirmed with SEARCH_RESTAURANTS action — already handled
       // But also try direct mention
       let attemptedName = null;
@@ -522,8 +538,14 @@ function fuzzyMatch(userQuery, restaurantName) {
 
         if (matchedItems.length > 0) {
           next.items = matchedItems.map(m => {
-            const qtyMatch = u.match(new RegExp(`(\\d+)\\s+${m.name.toLowerCase()}`));
-            const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+            const wordNums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+            const qtyMatch = u.match(new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`));
+            
+            let qty = null;
+            if (qtyMatch) {
+              const val = qtyMatch[1];
+              qty = wordNums[val] || parseInt(val) || 1;
+            }
             return { name: m.name, qty, price: m.price, menuItem: m };
           });
           next.itemError = null;
@@ -629,7 +651,30 @@ function fuzzyMatch(userQuery, restaurantName) {
       return;
     }
 
-    if (bd.restaurant && bd.items?.length > 0 && bd.date && bd.time) {
+    // Check if any food item is missing quantity
+    const itemMissingQty = bd.items?.find(item => item.qty === null);
+    if (itemMissingQty) {
+      const errorMsg = {
+        en: `How many portions of ${itemMissingQty.name} would you like to order?`,
+        te: `${itemMissingQty.name} ఎన్ని కావాలో చెప్పండి?`,
+        hi: `आप ${itemMissingQty.name} की कितनी मात्रा ऑर्डर करना चाहेंगे?`
+      };
+      const txt = errorMsg[currentLang] || errorMsg.en;
+      
+      // Set the flag to track this item's quantity on next turn
+      updateBooking(prev => ({ ...prev, awaitingQtyFor: itemMissingQty.name }));
+      
+      addMessage('agent', txt, currentLang);
+      setAgentState(AGENT_STATE.SPEAKING);
+      onSpeak?.(txt, currentLang, () => {
+        setAgentState(AGENT_STATE.LISTENING);
+      });
+      return;
+    }
+
+    const hasAllQtys = bd.items?.length > 0 && bd.items.every(item => item.qty !== null);
+
+    if (bd.restaurant && hasAllQtys && bd.date && bd.time) {
       const cartStore = useCartStore.getState();
       cartStore.clearCart();
 
