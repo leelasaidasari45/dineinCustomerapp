@@ -9,6 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // 25 realistic Hyderabad restaurants
 const hyderabadRestaurants = [
+  { name: 'Shadhab', cuisine_tags: ['Biryani', 'Mughlai', 'Kebabs'], address: 'High Court Road, Ghansi Bazaar, Hyderabad', photo_url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80', avg_prep_time_minutes: 25, rating: 4.6, is_open: true },
   { name: 'Bawarchi Restaurant', cuisine_tags: ['Biryani', 'Mughlai', 'Kebabs'], address: 'RTC X Roads, Musheerabad, Hyderabad', photo_url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80', avg_prep_time_minutes: 25, rating: 4.6, is_open: true },
   { name: 'Paradise Biryani', cuisine_tags: ['Biryani', 'North Indian', 'Curries'], address: 'SD Road, Secunderabad, Hyderabad', photo_url: 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=800&q=80', avg_prep_time_minutes: 20, rating: 4.3, is_open: true },
   { name: 'Shah Ghouse', cuisine_tags: ['Biryani', 'Haleem', 'Mughlai'], address: 'Gachibowli Main Rd, Gachibowli, Hyderabad', photo_url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&q=80', avg_prep_time_minutes: 30, rating: 4.4, is_open: true },
