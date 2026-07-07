@@ -374,7 +374,7 @@ function fuzzyMatch(userQuery, restaurantName) {
       let attemptedName = null;
       const visitMatch = u.match(/(?:visit|book|go to|restaurant|table at|named|hotel)\s+([a-z0-9\s]+)/i);
       if (visitMatch) {
-        const candidate = visitMatch[1].replace(/\b(today|tomorrow|at|time|guests?|people|food|order|idly|dosa|biryani|burger)\b/g, '').trim();
+        const candidate = visitMatch[1].replace(/\b(today|tomorrow|at|time|guests?|people|food|order|idly|dosa|biryani|burger|table|tables|seat|seats|spot|spots|booking|reservation|place|places|for|to|a|an|the)\b/g, '').trim();
         // Ignore if candidate looks like a time (e.g. 7pm, 5:00), a number, or a day name
         const isTimeOrDay = /^\d{1,2}\s*(am|pm)?$/i.test(candidate) || 
                             /^\d+$/i.test(candidate) ||
