@@ -521,9 +521,11 @@ function fuzzyMatch(userQuery, restaurantName) {
         if (gm) next.guests = wordNums[gm[1]] || parseInt(gm[1]) || null;
       }
 
-      // Food items — look for food-like words after verbs
-      const foodKeywords = ['order', 'want', 'like', 'give', 'add', 'biryani', 'idli', 'idly', 'dosa', 'pizza', 'burger', 'curry', 'rice', 'roti', 'naan', 'chicken', 'paneer', 'fish'];
-      const hasFood = foodKeywords.some(k => u.includes(k));
+      // Food items — look for food-like words or verbs
+      const foodVerbs = ['order', 'want', 'like', 'give', 'add'];
+      const foodNouns = ['biryani', 'idli', 'idly', 'dosa', 'pizza', 'burger', 'curry', 'rice', 'roti', 'naan', 'chicken', 'paneer', 'fish', 'salad', 'kebab', 'kabab', 'coffee', 'tea'];
+      const hasFood = foodVerbs.some(v => u.includes(v)) || foodNouns.some(n => u.includes(n));
+
       if (hasFood && !prev.items?.length) {
         // Extract items from user text using fuzzy prefix match
         const activeRestaurantId = next.restaurant?.id || prev.restaurant?.id;
@@ -551,9 +553,16 @@ function fuzzyMatch(userQuery, restaurantName) {
           next.itemError = null;
         } else if (next.restaurant || prev.restaurant) {
           // Food was requested but is not present on this restaurant's menu!
-          const attemptedFood = foodKeywords.find(k => u.includes(k));
+          const nounMatch = foodNouns.find(n => u.includes(n));
+          const verbMatch = u.match(/(?:order|want|like|give|add)\s+([a-z0-9]+)/i);
+          const attemptedFood = nounMatch || verbMatch?.[1];
+
           next.items = [];
-          next.itemError = attemptedFood ? attemptedFood.charAt(0).toUpperCase() + attemptedFood.slice(1) : "this item";
+          if (attemptedFood && attemptedFood !== 'table') {
+            next.itemError = attemptedFood.charAt(0).toUpperCase() + attemptedFood.slice(1);
+          } else {
+            next.itemError = "this item";
+          }
         }
       }
 
