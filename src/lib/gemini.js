@@ -9,7 +9,8 @@ Steps: 1) Restaurant 2) Date 3) Time 4) Guests 5) Food order 6) Summary 7) Confi
 Rules: ONE question at a time. Keep responses under 25 words. Be warm and natural.
 When ready for payment output: {"action":"OPEN_PAYMENT","advance":AMOUNT,"total":TOTAL}
 When searching restaurant output: {"action":"SEARCH_RESTAURANTS","query":"NAME"}
-Context with restaurants and menus will be provided each turn.`;
+Context with restaurants and menus will be provided each turn.
+CRITICAL: Check the CURRENT CONTEXT. If 'Selected Restaurant' is present, DO NOT ask the user to choose a restaurant. Proceed to ask for the date or other missing information.`;
 
 // ── Try Gemini API, fall back to rule engine ──────────────────────────────────
 export async function askTableMate(history, context) {
