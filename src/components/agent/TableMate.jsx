@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Mic, MicOff, MessageSquare, ChevronDown } from 'lucide-react';
+import { X, Send, Mic, MicOff, MessageSquare, ChevronDown, Volume2, VolumeX } from 'lucide-react';
 import { useVoice } from '../../hooks/useVoice';
 import { useTableMate, AGENT_STATE } from '../../hooks/useTableMate';
 
@@ -193,12 +193,19 @@ function StateLabel({ state }) {
 export default function TableMate() {
   const [isOpen, setIsOpen] = useState(false);
   const [textInput, setTextInput] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
+  
   const messagesEndRef = useRef(null);
   const chatPanelRef = useRef(null);
 
   // Voice callbacks (declared early so hooks can reference them)
   const handleSpeak = useCallback((text, lang, onDone) => {
-    speak(text, lang, onDone);
+    if (isMutedRef.current) {
+      onDone?.();
+    } else {
+      speak(text, lang, onDone);
+    }
   }, []); // eslint-disable-line
 
   const handleStateChange = useCallback((state) => {
@@ -225,6 +232,17 @@ export default function TableMate() {
     onEnd: handleVoiceEnd,
     onError: handleVoiceError,
   });
+
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const next = !prev;
+      isMutedRef.current = next;
+      if (next) {
+        stopSpeaking();
+      }
+      return next;
+    });
+  }, [stopSpeaking]);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -377,9 +395,22 @@ export default function TableMate() {
                   <Waveform />
                 </div>
               )}
+              {/* Mute button */}
+              <button
+                onClick={toggleMute}
+                className={`transition-colors flex-shrink-0 p-1.5 rounded-xl ml-auto ${
+                  isMuted 
+                    ? 'text-rose-400 hover:text-rose-300 bg-rose-500/10 border border-rose-500/20' 
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                }`}
+                title={isMuted ? "Unmute voice" : "Mute voice"}
+              >
+                {isMuted ? <VolumeX className="w-4.5 h-4.5" /> : <Volume2 className="w-4.5 h-4.5" />}
+              </button>
+
               <button
                 onClick={() => { reset(); setIsOpen(false); }}
-                className="text-gray-500 hover:text-gray-300 transition-colors ml-auto flex-shrink-0"
+                className="text-gray-500 hover:text-gray-300 transition-colors p-1.5 rounded-xl hover:bg-white/5 flex-shrink-0"
                 title="Reset conversation"
               >
                 <ChevronDown className="w-5 h-5" />
