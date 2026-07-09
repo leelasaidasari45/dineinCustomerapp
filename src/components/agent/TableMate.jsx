@@ -17,14 +17,22 @@ function RobotFace({ state }) {
       <motion.line
         x1="40" y1="8" x2="40" y2="18"
         stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round"
-        animate={isThinking ? { y1: [8, 5, 8], y2: [18, 15, 18] } : {}}
-        transition={{ repeat: Infinity, duration: 0.6 }}
+        animate={{ y: isThinking ? [0, -3, 0] : 0 }}
+        transition={{ repeat: isThinking ? Infinity : 0, duration: 0.6 }}
       />
       <motion.circle
         cx="40" cy="6" r="4"
         fill={isListening ? '#34d399' : isThinking ? '#f59e0b' : isSpeaking ? '#60a5fa' : '#a78bfa'}
-        animate={isActive ? { scale: [1, 1.4, 1], opacity: [1, 0.7, 1] } : { scale: 1 }}
-        transition={{ repeat: Infinity, duration: isListening ? 0.7 : 1.2 }}
+        animate={{ 
+          y: isThinking ? [0, -3, 0] : 0, 
+          scale: isActive ? [1, 1.4, 1] : 1, 
+          opacity: isActive ? [1, 0.7, 1] : 1 
+        }}
+        transition={{
+          y: { repeat: isThinking ? Infinity : 0, duration: 0.6 },
+          scale: { repeat: isActive ? Infinity : 0, duration: isListening ? 0.7 : 1.2 },
+          opacity: { repeat: isActive ? Infinity : 0, duration: isListening ? 0.7 : 1.2 },
+        }}
       />
 
       {/* Head */}
@@ -33,8 +41,8 @@ function RobotFace({ state }) {
         fill="url(#headGrad)"
         stroke={isListening ? '#34d399' : isThinking ? '#f59e0b' : '#6d28d9'}
         strokeWidth="2"
-        animate={isActive ? { scale: [1, 1.015, 1] } : {}}
-        transition={{ repeat: Infinity, duration: 2 }}
+        animate={{ scale: isActive ? [1, 1.015, 1] : 1 }}
+        transition={{ repeat: isActive ? Infinity : 0, duration: 2 }}
       />
 
       {/* Gradient def */}
@@ -49,40 +57,44 @@ function RobotFace({ state }) {
       <motion.ellipse
         cx="30" cy="35" rx="7" ry="7"
         fill={isListening ? '#34d399' : isThinking ? '#f59e0b' : isSpeaking ? '#60a5fa' : '#818cf8'}
-        animate={isActive ? { scaleY: [1, 0.15, 1] } : {}}
-        transition={{ repeat: Infinity, duration: 3.5, times: [0, 0.1, 0.2] }}
+        animate={{ scaleY: isActive ? [1, 0.15, 1] : 1 }}
+        transition={{ repeat: isActive ? Infinity : 0, duration: 3.5, times: [0, 0.1, 0.2] }}
       />
       <motion.circle
         cx="30" cy="35" r="3.5"
         fill="white"
-        animate={isListening ? { cx: [30, 31, 30] } : {}}
-        transition={{ repeat: Infinity, duration: 1.5 }}
+        animate={{ x: isListening ? [0, 1, 0] : 0 }}
+        transition={{ repeat: isListening ? Infinity : 0, duration: 1.5 }}
       />
 
       {/* Right Eye */}
       <motion.ellipse
         cx="50" cy="35" rx="7" ry="7"
         fill={isListening ? '#34d399' : isThinking ? '#f59e0b' : isSpeaking ? '#60a5fa' : '#818cf8'}
-        animate={isActive ? { scaleY: [1, 0.15, 1] } : {}}
-        transition={{ repeat: Infinity, duration: 3.5, times: [0, 0.1, 0.2], delay: 0.05 }}
+        animate={{ scaleY: isActive ? [1, 0.15, 1] : 1 }}
+        transition={{ repeat: isActive ? Infinity : 0, duration: 3.5, times: [0, 0.1, 0.2], delay: 0.05 }}
       />
       <motion.circle
         cx="50" cy="35" r="3.5"
         fill="white"
-        animate={isListening ? { cx: [50, 51, 50] } : {}}
-        transition={{ repeat: Infinity, duration: 1.5 }}
+        animate={{ x: isListening ? [0, 1, 0] : 0 }}
+        transition={{ repeat: isListening ? Infinity : 0, duration: 1.5 }}
       />
 
       {/* Mouth */}
       {isSpeaking ? (
         <motion.rect
+          key="mouth-speaking"
           x="25" y="50" rx="4"
+          width="18"
+          height="8"
           fill="#60a5fa"
           animate={{ width: [18, 26, 18, 22, 18], height: [8, 10, 6, 10, 8], x: [25, 22, 25, 23, 25], y: [50, 49, 51, 49, 50] }}
           transition={{ repeat: Infinity, duration: 0.5 }}
         />
       ) : isListening ? (
         <motion.path
+          key="mouth-listening"
           d="M25 52 Q40 62 55 52"
           stroke="#34d399" strokeWidth="3" strokeLinecap="round" fill="none"
           animate={{ d: ['M25 52 Q40 62 55 52', 'M25 50 Q40 60 55 50', 'M25 52 Q40 62 55 52'] }}
@@ -90,6 +102,7 @@ function RobotFace({ state }) {
         />
       ) : (
         <motion.path
+          key="mouth-idle"
           d="M27 52 Q40 60 53 52"
           stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" fill="none"
         />
@@ -146,7 +159,7 @@ function MessageBubble({ msg }) {
         </div>
       )}
       <div className={`max-w-[78%] ${isAgent ? 'items-start' : 'items-end'} flex flex-col gap-1`}>
-        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isAgent
             ? 'bg-gradient-to-br from-[#1e1b4b] to-[#2d1b69] text-gray-100 rounded-tl-sm border border-violet-800/40'
             : 'bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-tr-sm'
@@ -197,7 +210,6 @@ export default function TableMate() {
   const isMutedRef = useRef(false);
   
   const messagesEndRef = useRef(null);
-  const chatPanelRef = useRef(null);
 
   // Voice callbacks (declared early so hooks can reference them)
   const handleSpeak = useCallback((text, lang, onDone) => {
@@ -369,7 +381,6 @@ export default function TableMate() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            ref={chatPanelRef}
             initial={{ opacity: 0, y: 30, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}

@@ -115,11 +115,14 @@ export default function OrderHistoryPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                        <span className="text-xs text-gray-400">
-                          Advance: {formatCurrency(order.advance_paid_amount)} paid
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
+                        <span className="text-gray-500">
+                          Paid: <span className="font-semibold text-emerald-600">{formatCurrency(order.advance_paid_amount)}</span> · Pay at Restaurant: <span className="font-semibold text-amber-600">{formatCurrency(order.remaining_amount)}</span>
                         </span>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center text-amber-600 font-medium">
+                          <span>Details</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                        </div>
                       </div>
                     </div>
                   </Link>

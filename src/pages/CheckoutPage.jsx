@@ -43,6 +43,7 @@ export default function CheckoutPage() {
     slot: '+30',
   }));
   const [paying, setPaying] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const cartSubtotal = items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0);
   const cartTaxes   = Math.round(cartSubtotal * 0.05 * 100) / 100;
@@ -305,22 +306,43 @@ export default function CheckoutPage() {
               </AnimatePresence>
 
               {/* Total */}
-              <div className="px-5 py-4">
-                <div className="flex justify-between items-center mb-1">
+              <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex justify-between items-center mb-2.5">
                   <span className="text-gray-500 text-sm">Total Bill</span>
                   <span className="font-bold text-dark-800">{formatCurrency(cartTotal)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-amber-600 text-sm font-semibold">Pay Now</span>
-                  <span className="font-extrabold text-amber-600 text-lg font-heading">{formatCurrency(advanceAmount)}</span>
+                
+                <div className="space-y-1.5 pt-2.5 border-t border-gray-200/60">
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-600 text-sm font-semibold flex items-center gap-1.5">
+                      Pay Now <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-md">50%</span>
+                    </span>
+                    <span className="font-extrabold text-amber-600 text-lg font-heading">{formatCurrency(advanceAmount)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span className="flex items-center gap-1.5">
+                      Pay at Restaurant <span className="text-[10px] bg-gray-200 text-gray-700 font-semibold px-1.5 py-0.5 rounded-md">50%</span>
+                    </span>
+                    <span className="font-semibold text-dark-800">{formatCurrency(remainingAmount)}</span>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Split Payment Note */}
+            <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-800 leading-relaxed shadow-sm">
+              <span className="text-base mt-0.5 flex-shrink-0">💡</span>
+              <div>
+                <p className="font-bold text-amber-950 mb-0.5">Split Payment Policy</p>
+                <p>Pay <span className="font-semibold text-amber-950">{formatCurrency(advanceAmount)} (50%)</span> now to confirm your pre-order. Pay the remaining <span className="font-semibold text-amber-950">{formatCurrency(remainingAmount)} (50%)</span> directly at the restaurant after your meal.</p>
               </div>
             </div>
 
             {/* Pay Button */}
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={handlePayment}
+              onClick={() => setShowConfirmModal(true)}
               disabled={paying}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
@@ -343,6 +365,98 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !paying && setShowConfirmModal(false)}
+              className="absolute inset-0 bg-dark-800/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden relative z-10 border border-gray-100 p-6 text-center"
+            >
+              {/* Icon / Header */}
+              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                <CreditCard className="w-8 h-8 text-amber-500" />
+              </div>
+
+              <h3 className="font-heading font-extrabold text-xl text-dark-800 mb-2">
+                Dine-in Split Payment
+              </h3>
+              
+              <p className="text-gray-500 text-sm mb-6 px-2 leading-relaxed">
+                To confirm your dine-in pre-order, you need to pay <span className="font-bold text-dark-800">50% now</span>. The remaining balance is payable directly at the restaurant.
+              </p>
+
+              {/* Payment Split Card */}
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6 border border-gray-100/80 text-left space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-medium">Total Order Value</span>
+                  <span className="font-bold text-dark-800">{formatCurrency(cartTotal)}</span>
+                </div>
+                
+                <div className="h-px bg-gray-200" />
+
+                <div className="flex justify-between items-center">
+                  <span className="text-amber-600 font-bold text-sm flex items-center gap-1.5">
+                    Pay Now (50% Online)
+                  </span>
+                  <span className="font-extrabold text-amber-600 text-lg font-heading">
+                    {formatCurrency(advanceAmount)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-medium flex items-center gap-1.5">
+                    Pay Later (50% at Restaurant)
+                  </span>
+                  <span className="font-bold text-dark-800">
+                    {formatCurrency(remainingAmount)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={handlePayment}
+                  disabled={paying}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold py-3.5 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {paying ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Confirm & Pay ${formatCurrency(advanceAmount)}`
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={paying}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Go Back
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }

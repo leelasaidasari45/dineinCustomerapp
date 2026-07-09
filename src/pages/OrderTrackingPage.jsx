@@ -145,9 +145,19 @@ export default function OrderTrackingPage() {
                     </span>
                   </div>
                 ))}
-                <div className="pt-3 border-t border-gray-100 flex justify-between font-bold">
-                  <span className="text-dark-800">Total</span>
-                  <span className="text-amber-600">{formatCurrency(order.total_amount)}</span>
+                <div className="pt-3 border-t border-gray-100 space-y-2">
+                  <div className="flex justify-between font-bold text-dark-800">
+                    <span>Total Bill</span>
+                    <span>{formatCurrency(order.total_amount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-semibold text-emerald-600">
+                    <span className="flex items-center gap-1">Paid Online (50%)</span>
+                    <span>{formatCurrency(order.advance_paid_amount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-semibold text-amber-600">
+                    <span className="flex items-center gap-1">Pay at Restaurant (50%)</span>
+                    <span>{formatCurrency(order.remaining_amount)}</span>
+                  </div>
                 </div>
               </div>
             </div>

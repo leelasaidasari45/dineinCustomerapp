@@ -1,7 +1,4 @@
 // ── Gemini AI Client for TableMate ──────────────────────────────────────────
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
 const SYSTEM_PROMPT = `You are TableMate, an intelligent multilingual AI Voice Concierge for Zuno.
 Help customers book a table and pre-order food through voice.
 Languages: English, Telugu, Hindi — detect automatically and respond in same language.
@@ -10,19 +7,20 @@ Rules: ONE question at a time. Keep responses under 25 words. Be warm and natura
 When ready for payment output: {"action":"OPEN_PAYMENT","advance":AMOUNT,"total":TOTAL}
 When searching restaurant output: {"action":"SEARCH_RESTAURANTS","query":"NAME"}
 Context with restaurants and menus will be provided each turn.
-CRITICAL: Check the CURRENT CONTEXT. If 'Selected Restaurant' is present, DO NOT ask the user to choose a restaurant. Proceed to ask for the date or other missing information.`;
+CRITICAL: Check the CURRENT CONTEXT. If 'Selected Restaurant' is present, DO NOT ask the user to choose a restaurant. Proceed to ask for the date or other missing information.
+SUGGESTIONS: If the user asks for suggestions or top/best restaurants (e.g., "suggest me top 3 restaurants"), list the requested number of top restaurants (default to 5 if no number is specified) from the context sorted by rating descending (include their ratings), and ask which one they want to book. (Exceed the 25-word limit for this response to format the list clearly).
+MENU ITEMS: If the user asks what items/dishes are present in a restaurant (e.g., "what are the items present in the Spice Garden restaurant"), look up the menu for that restaurant from the context, list all items with their prices, and ask what they would like to order. (Exceed the 25-word limit for this response to list the items clearly). If the restaurant is not selected yet, output the search action: {"action":"SEARCH_RESTAURANTS","query":"NAME"} on a separate line.`;
 
-// ── Try Gemini API, fall back to rule engine ──────────────────────────────────
+// ── Try serverless proxy, fallback to local direct call or rule engine ────────
 export async function askTableMate(history, context) {
-  const isValidKey = GEMINI_API_KEY
-    && GEMINI_API_KEY.length > 10
-    && GEMINI_API_KEY !== 'your_gemini_api_key_here'
-    && GEMINI_API_KEY.startsWith('AIza');
+  const localKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const isLocalDev = import.meta.env.DEV;
 
-  if (isValidKey) {
+  // In local development, fallback to direct client-side requests if a local key is present in .env
+  if (isLocalDev && localKey && localKey.length > 10 && localKey !== 'your_gemini_api_key_here' && localKey.startsWith('AIza')) {
     try {
       const systemWithCtx = SYSTEM_PROMPT + (context ? `\n\nCURRENT CONTEXT:\n${context}` : '');
-      const res = await fetch(GEMINI_URL, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -31,16 +29,168 @@ export async function askTableMate(history, context) {
           generationConfig: { temperature: 0.7, maxOutputTokens: 256 },
         }),
       });
-      if (!res.ok) throw new Error(`Gemini ${res.status}`);
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (text) return text;
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (text) return text;
+      }
     } catch (e) {
-      console.warn('[TableMate] Gemini unavailable, using rule engine:', e.message);
+      console.warn('[TableMate] Direct local Gemini call failed:', e.message);
     }
   }
 
+  // Production Secure Route: call the Serverless proxy function
+  try {
+    const res = await fetch('/api/tablemate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history, context }),
+    });
+    if (!res.ok) throw new Error(`Serverless proxy status ${res.status}`);
+    const data = await res.json();
+    if (data.text) return data.text;
+  } catch (e) {
+    console.warn('[TableMate] Serverless proxy unavailable, using rule engine:', e.message);
+  }
+
   return ruleEngine(history, context || '');
+}
+
+const FALLBACK_MENUS = {
+  // South Indian / Breakfast
+  'south spice': [
+    { name: 'Idly (2 pcs)', price: '80' },
+    { name: 'Masala Dosa', price: '110' },
+    { name: 'Mysore Bajji', price: '90' },
+    { name: 'Filter Coffee', price: '50' }
+  ],
+  'chutneys': [
+    { name: 'Ghee Karam Masala Dosa', price: '110' },
+    { name: 'Steamed Ghee Idly (2 pcs)', price: '60' },
+    { name: 'Crispy Medu Vada (2 pcs)', price: '70' },
+    { name: 'Authentic Filter Coffee', price: '40' }
+  ],
+  'minerva': [
+    { name: 'Ghee Karam Masala Dosa', price: '110' },
+    { name: 'Steamed Ghee Idly (2 pcs)', price: '60' },
+    { name: 'Crispy Medu Vada (2 pcs)', price: '70' },
+    { name: 'Authentic Filter Coffee', price: '40' }
+  ],
+  'taj mahal': [
+    { name: 'Ghee Karam Masala Dosa', price: '110' },
+    { name: 'Steamed Ghee Idly (2 pcs)', price: '60' },
+    { name: 'Crispy Medu Vada (2 pcs)', price: '70' },
+    { name: 'Authentic Filter Coffee', price: '40' }
+  ],
+  'subayya': [
+    { name: 'Ghee Karam Masala Dosa', price: '110' },
+    { name: 'Steamed Ghee Idly (2 pcs)', price: '60' },
+    { name: 'Crispy Medu Vada (2 pcs)', price: '70' },
+    { name: 'Authentic Filter Coffee', price: '40' }
+  ],
+
+  // Biryani / Mughlai
+  'spice garden': [
+    { name: 'Paneer Tikka', price: '280' },
+    { name: 'Chicken Seekh Kebab', price: '340' },
+    { name: 'Dal Makhani', price: '280' },
+    { name: 'Chicken Biryani', price: '420' },
+    { name: 'Paneer Butter Masala', price: '320' },
+    { name: 'Garlic Naan', price: '60' }
+  ],
+  'shadhab': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+  'bawarchi': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+  'paradise': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+  'shah ghouse': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+  'cafe bahar': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+  'mehfil': [
+    { name: 'Special Chicken Biryani', price: '290' },
+    { name: 'Special Mutton Biryani', price: '340' },
+    { name: 'Chicken Tikka Kebab', price: '250' },
+    { name: 'Garlic Butter Naan', price: '60' }
+  ],
+
+  // Pizza / Burgers / Western / Cafe
+  'the pizza republic': [
+    { name: 'Garlic Bread', price: '150' },
+    { name: 'Chicken Wings', price: '320' },
+    { name: 'Margherita Pizza', price: '350' },
+    { name: 'BBQ Chicken Pizza', price: '450' },
+    { name: 'Classic Smash Burger', price: '280' }
+  ],
+  'burger barn': [
+    { name: 'Classic Beef Burger', price: '250' },
+    { name: 'Spicy Chicken Burger', price: '270' },
+    { name: 'Veg Cheese Burger', price: '220' },
+    { name: 'French Fries', price: '120' }
+  ],
+  'concu': [
+    { name: 'Classic Margherita Pizza', price: '290' },
+    { name: 'Double Cheese Burger', price: '160' },
+    { name: 'Chicken Alfredo Pasta', price: '260' },
+    { name: 'Chilli Garlic Hakka Noodles', price: '180' }
+  ],
+  'roastery': [
+    { name: 'Classic Margherita Pizza', price: '290' },
+    { name: 'Double Cheese Burger', price: '160' },
+    { name: 'Chicken Alfredo Pasta', price: '260' },
+    { name: 'Chilli Garlic Hakka Noodles', price: '180' }
+  ],
+
+  // Sweet / Desserts
+  'sweet cravings': [
+    { name: 'Chocolate Fudge Cake', price: '180' },
+    { name: 'Red Velvet Pastry', price: '150' },
+    { name: 'Vanilla Ice Cream scoop', price: '90' },
+    { name: 'Mango Milkshake', price: '140' }
+  ],
+  'cream stone': [
+    { name: 'Chocolate Fudge Cake', price: '180' },
+    { name: 'Red Velvet Pastry', price: '150' },
+    { name: 'Vanilla Ice Cream scoop', price: '90' },
+    { name: 'Mango Milkshake', price: '140' }
+  ]
+};
+
+function getFallbackMenu(restaurantName) {
+  const name = (restaurantName || '').toLowerCase();
+  for (const [key, value] of Object.entries(FALLBACK_MENUS)) {
+    if (name.includes(key) || key.includes(name)) {
+      return value;
+    }
+  }
+  if (name.includes('biryani') || name.includes('mughlai') || name.includes('kebab')) {
+    return FALLBACK_MENUS['shadhab'];
+  }
+  if (name.includes('dosa') || name.includes('idly') || name.includes('south') || name.includes('coffee')) {
+    return FALLBACK_MENUS['south spice'];
+  }
+  return FALLBACK_MENUS['concu'];
 }
 
 // ── Smart Rule-Based Conversation Engine ─────────────────────────────────────
@@ -48,6 +198,187 @@ export async function askTableMate(history, context) {
 function ruleEngine(history, ctx) {
   const lastUser = [...history].reverse().find(h => h.role === 'user')?.parts?.[0]?.text || '';
   const u = lastUser.toLowerCase();
+
+  // ── Smart Suggestion Check ──
+  const isSuggestRequest = (
+    /\b(suggest|recommend|show|list|tell|give|top|best|highest|rated|rating|popular|famous)\b/i.test(u) ||
+    /టాప్|ఉత్తమ|బెస్ట్|అత్యుత్తమ|టాప్|अच्छे|बेस्ट|टॉप/i.test(u)
+  ) && (
+    /\b(restaurants?|places?|hotels?|eating|dining)\b/i.test(u) ||
+    /రెస్టారెం|రెస్టారెంట్|रेस्टोरेंट|रेस्टोरेंट्स/i.test(u)
+  );
+
+  if (isSuggestRequest) {
+    const rList = [];
+    const lines = ctx.split('\n');
+    for (const line of lines) {
+      if (line.includes('Name:') && line.includes('Rating:')) {
+        const namePart = line.match(/Name:\s*(.*?)\s*\|/);
+        const ratingPart = line.match(/Rating:\s*([\d.]+)/);
+        if (namePart && ratingPart) {
+          rList.push({
+            name: namePart[1].trim(),
+            rating: parseFloat(ratingPart[1]) || 0
+          });
+        }
+      }
+    }
+
+    const fallbackRestaurants = [
+      { name: 'Sweet Cravings', rating: 4.7 },
+      { name: 'South Spice', rating: 4.6 },
+      { name: 'Spice Garden', rating: 4.5 },
+      { name: 'The Pizza Republic', rating: 4.3 },
+      { name: 'Wok & Roll', rating: 4.1 },
+      { name: 'Burger Barn', rating: 4.0 }
+    ];
+
+    const numMatch = u.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/);
+    const wordNums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+    let limit = 5;
+    if (numMatch) {
+      const val = numMatch[1].toLowerCase();
+      limit = wordNums[val] || parseInt(val) || 5;
+    }
+
+    const listToUse = rList.length > 0 ? rList : fallbackRestaurants;
+    const sorted = [...listToUse].sort((a, b) => b.rating - a.rating);
+    const topN = sorted.slice(0, limit);
+
+    const isTelugu = /[\u0C00-\u0C7F]/.test(u) || /\b(avunu|kadhu|cheppandi)\b/i.test(u);
+    const isHindi = /[\u0900-\u097F]/.test(u) || /\b(haan|nahi|kijiye|suno)\b/i.test(u);
+
+    const listStr = topN.map((r, i) => `${i + 1}. ${r.name} (${r.rating} ⭐)`).join('\n');
+
+    if (isTelugu) {
+      return `రేటింగ్‌ల ఆధారంగా టాప్ ${limit} రెస్టారెంట్లు ఇక్కడ ఉన్నాయి:\n${listStr}\n\nమీరు ఏ రెస్టారెంట్‌ను బుక్ చేయాలనుకుంటున్నారు?`;
+    } else if (isHindi) {
+      return `रेटिंग के आधार पर टॉप ${limit} रेस्टोरेंट यहां दिए गए हैं:\n${listStr}\n\nआप कौन सा रेस्टोरेंट बुक करना चाहेंगे?`;
+    } else {
+      return `Here are the top ${limit} restaurants based on ratings:\n${listStr}\n\nWhich one would you like to visit?`;
+    }
+  }
+
+  // ── Smart Menu Items Query Check ──
+  const isMenuQuery = /\b(menu|items|dishes|food|list|card|available|serve|serves|have|present|eat)\b/i.test(u) &&
+                      !/\b(order|add|want\s+to\s+order|want\s+to\s+add)\b/i.test(u);
+
+  // Parse current restaurant from context if any
+  const currentRestaurantMatch = ctx.match(/Selected Restaurant: (.+?) \(ID:/);
+  const currentRestaurantName = currentRestaurantMatch?.[1]?.trim() || '';
+
+  // Parse all available restaurants from context
+  const dbRestaurants = [];
+  const linesForNames = ctx.split('\n');
+  for (const line of linesForNames) {
+    if (line.includes('Name:') && line.includes('Rating:')) {
+      const namePart = line.match(/Name:\s*(.*?)\s*\|/);
+      if (namePart) {
+        dbRestaurants.push(namePart[1].trim());
+      }
+    }
+  }
+
+  // Predefined known restaurant names (DB seed names + mock names)
+  const fallbackNames = [
+    'Spice Garden', 'The Pizza Republic', 'Wok & Roll', 'South Spice', 'Burger Barn', 'Sweet Cravings',
+    'Shadhab', 'Bawarchi Restaurant', 'Paradise Biryani', 'Shah Ghouse', 'Cafe Bahar', 'Pista House',
+    'Chutneys', 'Minerva Coffee Shop', 'Taj Mahal Hotel', 'Subayya Gari Hotel', 'Rayalaseema Ruchulu',
+    'Mehfil Restaurant', 'Absolute Barbecues', 'Barbeque Nation', 'Concu', 'Roastery Coffee House',
+    'Cream Stone', 'Exotica', 'SodaBottleOpenerWala', 'Olive Bistro', 'Flea Bazaar Cafe',
+    'Santosh Dhaba', 'Nanking Restaurant', 'Ohris Jiva Imperia', 'Gusto Latino', 'Wok to Walk',
+    'Sri Sai Balaji Restaurant'
+  ];
+
+  const allKnownNames = dbRestaurants.length > 0 ? dbRestaurants : fallbackNames;
+  const sortedKnownNames = [...allKnownNames].sort((a, b) => b.length - a.length);
+
+  // Extract candidate restaurant name from the user message if they mentioned one
+  let queryRestaurantName = null;
+  const attemptedMatch = u.match(/(?:in|at|present in|menu of|items at|items in)\s+(?:the\s+)?([a-z0-9\s&]+?)(?:\s+restaurant|\s+hotel|\s+cafe|\s+place|$)/i);
+  let attemptedName = null;
+  if (attemptedMatch) {
+    const candidate = attemptedMatch[1].trim();
+    if (candidate.length > 2 && !/\b(today|tomorrow|time|table|guest|people|food|order|menu|items|dishes)\b/.test(candidate)) {
+      attemptedName = candidate;
+    }
+  }
+
+  if (attemptedName) {
+    queryRestaurantName = sortedKnownNames.find(name =>
+      fuzzyMatch(attemptedName, name) ||
+      fuzzyMatch(attemptedName.split(' ')[0], name)
+    );
+  } else {
+    queryRestaurantName = sortedKnownNames.find(name => {
+      const cleanName = name.toLowerCase();
+      const firstWord = cleanName.split(' ')[0];
+      return u.includes(cleanName) || (firstWord.length >= 3 && u.includes(firstWord));
+    });
+  }
+
+  if (isMenuQuery) {
+    if (attemptedName && !queryRestaurantName) {
+      const isTelugu = /[\u0C00-\u0C7F]/.test(u) || /\b(avunu|kadhu|cheppandi)\b/i.test(u);
+      const isHindi = /[\u0900-\u097F]/.test(u) || /\b(haan|nahi|kijiye|suno)\b/i.test(u);
+      const list = allKnownNames.slice(0, 5).join(', ');
+      
+      if (isTelugu) {
+        return `నేను "${attemptedName}" రెస్టారెంట్‌ను కనుగొనలేకపోయాను. అందుబాటులో ఉన్నవి: ${list}.`;
+      } else if (isHindi) {
+        return `मुझे "${attemptedName}" रेस्टोरेंट नहीं मिला। उपलब्ध रेस्टोरेंट हैं: ${list}.`;
+      } else {
+        return `I couldn't find "${attemptedName}" in Zuno. Available restaurants are: ${list}. Which one would you like to book?`;
+      }
+    }
+
+    const targetRestaurantName = queryRestaurantName || currentRestaurantName;
+
+    if (targetRestaurantName) {
+      const menuItems = [];
+      const lines = ctx.split('\n');
+      let inMenuSection = false;
+      for (const line of lines) {
+        if (line.startsWith('Menu:')) {
+          inMenuSection = true;
+          continue;
+        }
+        if (inMenuSection) {
+          if (line.trim() === '' || line.startsWith('Selected') || line.startsWith('Guests:') || line.startsWith('Ordered')) {
+            inMenuSection = false;
+            continue;
+          }
+          const itemMatch = line.match(/-\s*(.*?)\s*\|\s*₹([\d,]+)/);
+          if (itemMatch) {
+            menuItems.push({
+              name: itemMatch[1].trim(),
+              price: itemMatch[2].trim()
+            });
+          }
+        }
+      }
+
+      const listToUse = menuItems.length > 0 ? menuItems : getFallbackMenu(targetRestaurantName);
+      const listStr = listToUse.map(item => `• ${item.name}: ₹${item.price}`).join('\n');
+
+      const isTelugu = /[\u0C00-\u0C7F]/.test(u) || /\b(avunu|kadhu|cheppandi)\b/i.test(u);
+      const isHindi = /[\u0900-\u097F]/.test(u) || /\b(haan|nahi|kijiye|suno)\b/i.test(u);
+
+      // If the restaurant is not currently selected, prepend search action
+      const requiresSelection = !currentRestaurantName || currentRestaurantName.toLowerCase() !== targetRestaurantName.toLowerCase();
+      const actionPrefix = requiresSelection
+        ? `{"action":"SEARCH_RESTAURANTS","query":"${targetRestaurantName}"}\n`
+        : '';
+
+      if (isTelugu) {
+        return `${actionPrefix}${targetRestaurantName} లో లభించే ఆహార పదార్థాలు మరియు వాటి ధరలు ఇక్కడ ఉన్నాయి:\n${listStr}\n\nమీరు ఏమి ఆర్డర్ చేయాలనుకుంటున్నారు?`;
+      } else if (isHindi) {
+        return `${actionPrefix}${targetRestaurantName} में उपलब्ध आइटम और उनकी कीमतें इस प्रकार हैं:\n${listStr}\n\nआप क्या ऑर्डर करना चाहेंगे?`;
+      } else {
+        return `${actionPrefix}Here are the items available at ${targetRestaurantName} with their prices:\n${listStr}\n\nWhat would you like to order?`;
+      }
+    }
+  }
 
   // ── Read current booking state from context ──
   const restaurantMatch = ctx.match(/Selected Restaurant: (.+?) \(ID:/);

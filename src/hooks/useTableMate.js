@@ -50,6 +50,36 @@ function parseArrivalDateTime(dateStr, timeStr) {
   return target;
 }
 
+function findBestMenuItem(menuList, itemName) {
+  if (!menuList || menuList.length === 0) return null;
+  const target = itemName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let bestMatch = menuList.find(m => m.name.toLowerCase().replace(/[^a-z0-9]/g, '') === target);
+  if (bestMatch) return bestMatch;
+  bestMatch = menuList.find(m => {
+    const mClean = m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return mClean.includes(target) || target.includes(mClean);
+  });
+  if (bestMatch) return bestMatch;
+  let maxOverlap = 0;
+  let bestOverlapItem = null;
+  const targetWords = itemName.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(w => w.length >= 3);
+  for (const item of menuList) {
+    const itemWords = item.name.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(w => w.length >= 3);
+    let overlap = 0;
+    for (const tw of targetWords) {
+      if (itemWords.includes(tw)) {
+        overlap += 1;
+      }
+    }
+    if (overlap > maxOverlap) {
+      maxOverlap = overlap;
+      bestOverlapItem = item;
+    }
+  }
+  if (bestOverlapItem && maxOverlap > 0) return bestOverlapItem;
+  return menuList[0];
+}
+
 export const AGENT_STATE = {
   IDLE: 'idle',
   GREETING: 'greeting',
@@ -79,6 +109,7 @@ const EMPTY_BOOKING = {
   awaitingQtyFor: null,
   foodConfirmed: false,
   awaitingFoodConfirmation: false,
+  menuRequested: false,
 };
 
 export function useTableMate({ onSpeak, onStateChange }) {
@@ -313,9 +344,7 @@ function fuzzyMatch(userQuery, restaurantName) {
 
       const cartItems = bd.items.map(item => {
         // Match user requested item to closest DB menu item
-        const match = menu.find(m =>
-          m.name.toLowerCase().replace(/[^a-z]/g, '').startsWith(item.name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3))
-        ) || menu[0]; // default fallback
+        const match = findBestMenuItem(menu, item.name) || menu[0]; // default fallback
         
         return {
           menuItem: match,
@@ -371,6 +400,27 @@ function fuzzyMatch(userQuery, restaurantName) {
 
     updateBooking(prev => {
       const next = { ...prev };
+
+      // Check if user is asking for items/menu list instead of ordering
+      const isMenuReq = /\b(menu|items|dishes|food|list|card|available|serve|serves|have|present)\b/i.test(u) &&
+                        !/\b(order|add|want\s+to\s+order|want\s+to\s+add)\b/i.test(u);
+      
+      if (isMenuReq) {
+        next.menuRequested = true;
+        // Search if a restaurant name is mentioned in this query to select it
+        let found = restaurantCacheRef.current.find(r => {
+          const first = r.name.split(' ')[0].toLowerCase();
+          const isStopWord = ['the', 'a', 'an', 'of', 'and', 'or', 'to', 'in', 'at'].includes(first);
+          return fuzzyMatch(u, r.name) ||
+                 (!isStopWord && first.length >= 3 && fuzzyMatch(u, first));
+        });
+        if (found) {
+          next.restaurant = found;
+          fetchMenu(found.id);
+        }
+      } else {
+        next.menuRequested = false;
+      }
 
       // Handle awaitingFoodConfirmation responses
       if (prev.awaitingFoodConfirmation) {
@@ -540,7 +590,7 @@ function fuzzyMatch(userQuery, restaurantName) {
       // Food items — look for food-like words or verbs
       const foodVerbs = ['order', 'want', 'like', 'give', 'add'];
       const foodNouns = ['biryani', 'idli', 'idly', 'dosa', 'pizza', 'burger', 'curry', 'rice', 'roti', 'naan', 'chicken', 'paneer', 'fish', 'salad', 'kebab', 'kabab', 'coffee', 'tea'];
-      const hasFood = foodVerbs.some(v => u.includes(v)) || foodNouns.some(n => u.includes(n));
+      const hasFood = !next.menuRequested && (foodVerbs.some(v => u.includes(v)) || foodNouns.some(n => u.includes(n)));
 
       if (hasFood) {
         const activeRestaurantId = next.restaurant?.id || prev.restaurant?.id;
@@ -578,8 +628,9 @@ function fuzzyMatch(userQuery, restaurantName) {
         if (matchedItems.length > 0) {
           const newItemsParsed = matchedItems.map(m => {
             const wordNums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-            const qtyRegex = new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`);
-            const qtyMatch = u.match(qtyRegex);
+            const beforeRegex = new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`);
+            const afterRegex = new RegExp(`${m.name.toLowerCase()}\\s+(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)`);
+            const qtyMatch = u.match(beforeRegex) || u.match(afterRegex);
             
             let qty = null;
             if (qtyMatch) {
@@ -788,9 +839,7 @@ function fuzzyMatch(userQuery, restaurantName) {
       }
 
       for (const item of bd.items) {
-        const match = menu.find(m =>
-          m.name.toLowerCase().replace(/[^a-z]/g, '').startsWith(item.name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3))
-        ) || menu[0];
+        const match = findBestMenuItem(menu, item.name) || menu[0];
 
         if (match) {
           // Set restaurantId and restaurantName on first item insertion
