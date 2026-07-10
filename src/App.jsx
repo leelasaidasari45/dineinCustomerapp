@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import RestaurantPage from './pages/RestaurantPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import OrderPreviewPage from './pages/OrderPreviewPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
@@ -32,6 +33,7 @@ function AnimatedRoutes() {
       <Route path="/restaurant/:id" element={<RestaurantPage />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />
+      <Route path="/checkout/summary" element={<OrderPreviewPage />} />
       <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
       <Route path="/track/:orderId" element={<OrderTrackingPage />} />
       <Route path="/orders" element={<OrderHistoryPage />} />

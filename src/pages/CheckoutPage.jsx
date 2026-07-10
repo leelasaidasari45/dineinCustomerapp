@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, ShoppingBag, MapPin, Clock, CreditCard, CheckCircle2, Leaf, Drumstick, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, MapPin, Clock, CreditCard, CheckCircle2, Leaf, Drumstick, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import PageTransition from '../components/layout/PageTransition';
@@ -86,11 +86,9 @@ export default function CheckoutPage() {
   const initialDate = queryParams.get('date') || '';
 
   const [arrivalInfo, setArrivalInfo] = useState(() => ({
-    arrivalDate: getArrivalDate('+30'),
-    slot: '+30',
+    arrivalDate: arrivalInfoState?.arrivalDate || getArrivalDate('+30'),
+    slot: arrivalInfoState?.slot || '+30',
   }));
-  const [paying, setPaying] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const cartSubtotal = items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0);
   const cartTaxes   = Math.round(cartSubtotal * 0.05 * 100) / 100;
@@ -134,35 +132,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async () => {
-    setPaying(true);
-    
-    // Simulate brief network delay for processing payment
-    setTimeout(async () => {
-      try {
-        const mockPaymentId = `pay_mock_${Math.random().toString(36).substring(2, 11)}`;
-        const order = await createOrder({
-          customerId: user.id,
-          restaurantId,
-          cartItems: items,
-          arrivalTime: arrivalInfo.arrivalDate,
-          estimatedReadyTime: arrivalInfo.arrivalDate,
-          totalAmount: cartTotal,
-          advancePaidAmount: advanceAmount,
-          remainingAmount,
-          paymentReference: mockPaymentId,
-          numGuests,
-          selectedTableIds,
-        });
-        clearCart();
-        toast.success('Payment Successful! Order placed. 🎉');
-        navigate(`/order-success/${order.id}`);
-      } catch (err) {
-        toast.error(`Order creation failed: ${err.message}`);
-        setPaying(false);
-      }
-    }, 1200);
-  };
+
 
   return (
     <PageTransition>
@@ -450,7 +420,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Pay Button */}
+             {/* Proceed to Preview Button */}
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => {
@@ -458,22 +428,13 @@ export default function CheckoutPage() {
                   toast.error('Please select at least one dining table to proceed.');
                   return;
                 }
-                setShowConfirmModal(true);
+                navigate('/checkout/summary');
               }}
-              disabled={paying}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2"
             >
-              {paying ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5" />
-                  Pay {formatCurrency(advanceAmount)}
-                </>
-              )}
+              <CreditCard className="w-5 h-5" />
+              Proceed to Preview
+              <ChevronRight className="w-5 h-5" />
             </motion.button>
 
             <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1.5">
@@ -483,111 +444,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !paying && setShowConfirmModal(false)}
-              className="absolute inset-0 bg-dark-800/60 backdrop-blur-sm"
-            />
 
-            {/* Modal Content */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', duration: 0.4 }}
-              className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden relative z-10 border border-gray-100 p-6 text-center"
-            >
-              {/* Icon / Header */}
-              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
-                <CreditCard className="w-8 h-8 text-amber-500" />
-              </div>
-
-              <h3 className="font-heading font-extrabold text-xl text-dark-800 mb-2">
-                Dine-in Split Payment
-              </h3>
-              
-              <p className="text-gray-500 text-sm mb-6 px-2 leading-relaxed">
-                To confirm your dine-in pre-order, you need to pay <span className="font-bold text-dark-800">50% now</span>. The remaining balance is payable directly at the restaurant.
-              </p>
-
-              {/* Payment Split Card */}
-              <div className="bg-gray-50 rounded-2xl p-4 mb-6 border border-gray-100/80 text-left space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Total Order Value</span>
-                  <span className="font-bold text-dark-800">{formatCurrency(cartTotal)}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Guests</span>
-                  <span className="font-bold text-dark-800">{numGuests} {numGuests === 1 ? 'Guest' : 'Guests'}</span>
-                </div>
-
-                {selectedTables.length > 0 && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 font-medium">Table(s)</span>
-                    <span className="font-bold text-dark-800">
-                      {selectedTables.map(t => t.table_number.match(/Table\s+\d+/)?.[0] || t.table_number).join(', ')}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="h-px bg-gray-200" />
-
-                <div className="flex justify-between items-center">
-                  <span className="text-amber-600 font-bold text-sm flex items-center gap-1.5">
-                    Pay Now (50% Online)
-                  </span>
-                  <span className="font-extrabold text-amber-600 text-lg font-heading">
-                    {formatCurrency(advanceAmount)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium flex items-center gap-1.5">
-                    Pay Later (50% at Restaurant)
-                  </span>
-                  <span className="font-bold text-dark-800">
-                    {formatCurrency(remainingAmount)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2.5">
-                <button
-                  onClick={handlePayment}
-                  disabled={paying}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold py-3.5 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  {paying ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    `Confirm & Pay ${formatCurrency(advanceAmount)}`
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  disabled={paying}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Go Back
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </PageTransition>
   );
 }

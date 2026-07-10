@@ -9,6 +9,8 @@ export const useCartStore = create(
       restaurantName: null,
       selectedTableIds: [],
       numGuests: 2,
+      arrivalDate: null,
+      arrivalSlot: null,
 
       addItem: (menuItem, quantity = 1, notes = '') => {
         const { items, restaurantId } = get();
@@ -72,9 +74,10 @@ export const useCartStore = create(
         });
       },
 
-      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, selectedTableIds: [], numGuests: 2 }),
+      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, selectedTableIds: [], numGuests: 2, arrivalDate: null, arrivalSlot: null }),
       setSelectedTableIds: (ids) => set({ selectedTableIds: ids }),
       setNumGuests: (num) => set({ numGuests: num }),
+      setArrivalInfo: (date, slot) => set({ arrivalDate: date, arrivalSlot: slot }),
 
       // Plain selector functions (NOT getters) — getters break persist serialization
       getItemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
@@ -105,6 +108,8 @@ export const useCartStore = create(
         restaurantName: state.restaurantName,
         selectedTableIds: state.selectedTableIds || [],
         numGuests: state.numGuests || 2,
+        arrivalDate: state.arrivalDate,
+        arrivalSlot: state.arrivalSlot,
       }),
     }
   )
