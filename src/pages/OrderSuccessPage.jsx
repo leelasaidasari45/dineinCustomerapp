@@ -142,6 +142,18 @@ export default function OrderSuccessPage() {
                   </div>
                 </div>
 
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm">👥</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Guests</p>
+                    <p className="font-semibold text-dark-800 text-sm">
+                      {order.num_guests || 2} {order.num_guests === 1 ? 'Guest' : 'Guests'}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="pt-3 border-t border-gray-100 flex justify-between">
                   <div>
                     <p className="text-xs text-gray-500">Total Bill</p>

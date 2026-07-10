@@ -1,9 +1,29 @@
--- ============================================================
--- Auto-save new users to customers or restaurant_owners table
--- Paste in Supabase SQL Editor → Run
--- ============================================================
+-- SQL Migration: Add restaurant_owners table, cascade delete constraints, and update the auth user trigger
 
--- Step 1: Create the trigger function
+-- 1. Create restaurant_owners table
+CREATE TABLE IF NOT EXISTS restaurant_owners (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  phone TEXT,
+  email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Add owner_id to restaurants table referencing restaurant_owners
+ALTER TABLE restaurants
+ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES restaurant_owners(id) ON DELETE CASCADE;
+
+-- 3. Update orders foreign key to restaurants to use ON DELETE CASCADE
+ALTER TABLE orders
+DROP CONSTRAINT IF EXISTS orders_restaurant_id_fkey;
+
+ALTER TABLE orders
+ADD CONSTRAINT orders_restaurant_id_fkey
+FOREIGN KEY (restaurant_id)
+REFERENCES restaurants(id)
+ON DELETE CASCADE;
+
+-- 4. Re-create the handle_new_user trigger function to be role-aware
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -74,10 +94,8 @@ BEGIN
 END;
 $$;
 
--- Step 2: Drop old trigger if it exists
+-- 5. Attach the trigger to auth.users (re-creating it)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- Step 3: Attach the trigger to auth.users
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW

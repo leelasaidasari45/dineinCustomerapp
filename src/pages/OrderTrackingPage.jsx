@@ -85,10 +85,16 @@ export default function OrderTrackingPage() {
                 <h3 className="font-heading font-bold text-dark-800 truncate">
                   {order.restaurants?.name || 'Restaurant'}
                 </h3>
-                <p className="text-gray-500 text-sm flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  Arrive by: {order.arrival_time ? formatTime(order.arrival_time) : '—'}
-                </p>
+                <div className="text-gray-500 text-sm space-y-0.5 mt-0.5">
+                  <p className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    Arrive by: {order.arrival_time ? formatTime(order.arrival_time) : '—'}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <span className="text-xs">👥</span>
+                    Guests: {order.num_guests || 2} {order.num_guests === 1 ? 'Guest' : 'Guests'}
+                  </p>
+                </div>
               </div>
               <span className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
                 order.status === 'ready'

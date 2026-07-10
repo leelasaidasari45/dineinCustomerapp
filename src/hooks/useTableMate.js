@@ -588,13 +588,21 @@ function fuzzyMatch(userQuery, restaurantName) {
       }
 
       // Food items — look for food-like words or verbs
-      const foodVerbs = ['order', 'want', 'like', 'give', 'add'];
       const foodNouns = ['biryani', 'idli', 'idly', 'dosa', 'pizza', 'burger', 'curry', 'rice', 'roti', 'naan', 'chicken', 'paneer', 'fish', 'salad', 'kebab', 'kabab', 'coffee', 'tea'];
-      const hasFood = !next.menuRequested && (foodVerbs.some(v => u.includes(v)) || foodNouns.some(n => u.includes(n)));
+      const activeRestaurantId = next.restaurant?.id || prev.restaurant?.id;
+      const menuItems = activeRestaurantId ? (menuCacheRef.current[activeRestaurantId] || []) : [];
+      
+      const hasMenuWord = menuItems.some(m => {
+        const itemWords = m.name.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(w => w.length >= 3 && !['special', 'steamed', 'fresh', 'warm', 'with', 'ghee', 'spicy'].includes(w));
+        return itemWords.some(iw => u.includes(iw));
+      });
+
+      const hasFoodNoun = foodNouns.some(n => u.includes(n)) || hasMenuWord;
+      const hasFoodVerb = /\b(order|add|eat|want\s+to\s+order|like\s+to\s+order|want\s+to\s+add|like\s+to\s+add)\b/i.test(u);
+      
+      const hasFood = !next.menuRequested && (hasFoodNoun || (hasFoodVerb && !/\b(visit|book|go\s+to|table|seat|spot|booking|reservation)\b/i.test(u)));
 
       if (hasFood) {
-        const activeRestaurantId = next.restaurant?.id || prev.restaurant?.id;
-        const menuItems = activeRestaurantId ? (menuCacheRef.current[activeRestaurantId] || []) : [];
         
         let matchedItems = [];
         if (menuItems.length > 0) {
@@ -662,7 +670,7 @@ function fuzzyMatch(userQuery, restaurantName) {
           next.awaitingFoodConfirmation = false;
         } else if ((next.restaurant || prev.restaurant) && !prev.items?.length) {
           const nounMatch = foodNouns.find(n => u.includes(n));
-          const verbMatch = u.match(/(?:order|want|like|give|add)\s+([a-z0-9]+)/i);
+          const verbMatch = u.match(/(?:order|add|give|have|want|like)\s+(?!to\s+)([a-z0-9]+)/i);
           const attemptedFood = nounMatch || verbMatch?.[1];
 
           next.items = [];

@@ -31,6 +31,15 @@ CREATE TYPE payment_status AS ENUM (
 -- TABLES
 -- ============================================================
 
+-- Restaurant Owners (mirrors auth.users)
+CREATE TABLE IF NOT EXISTS restaurant_owners (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  phone TEXT,
+  email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Restaurants
 CREATE TABLE IF NOT EXISTS restaurants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -41,6 +50,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   avg_prep_time_minutes INTEGER DEFAULT 20,
   rating DECIMAL(2,1) DEFAULT 4.0,
   is_open BOOLEAN DEFAULT true,
+  owner_id UUID REFERENCES restaurant_owners(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -72,7 +82,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  restaurant_id UUID NOT NULL REFERENCES restaurants(id),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   status order_status DEFAULT 'pending_payment',
   arrival_time TIMESTAMPTZ,
   estimated_ready_time TIMESTAMPTZ,
@@ -81,6 +91,7 @@ CREATE TABLE IF NOT EXISTS orders (
   remaining_amount DECIMAL(10,2) DEFAULT 0,
   payment_status payment_status DEFAULT 'pending',
   payment_reference TEXT,
+  num_guests INTEGER DEFAULT 2,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

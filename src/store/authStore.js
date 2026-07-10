@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 export const useAuthStore = create((set, get) => ({
   user: null,
   customer: null,
+  owner: null,
+  role: null,
   loading: true,
   authModalOpen: false,
   authModalMode: 'login',
@@ -41,27 +43,43 @@ export const useAuthStore = create((set, get) => ({
           await get().fetchCustomerProfile(session.user.id);
         }
       } else if (event === 'SIGNED_OUT') {
-        set({ user: null, customer: null });
+        set({ user: null, customer: null, owner: null, role: null });
       }
     });
   },
 
   fetchCustomerProfile: async (userId) => {
     try {
-      const { data, error } = await supabase
+      // 1. Try to fetch from customers
+      const { data: customerData } = await supabase
         .from('customers')
         .select('*')
         .eq('id', userId)
-        .single();
-      
-      if (error) throw error;
-      if (data) set({ customer: data });
+        .maybeSingle();
+
+      if (customerData) {
+        set({ customer: customerData, owner: null, role: 'customer' });
+        return;
+      }
+
+      // 2. If not found in customers, try to fetch from restaurant_owners
+      const { data: ownerData } = await supabase
+        .from('restaurant_owners')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (ownerData) {
+        set({ customer: null, owner: ownerData, role: 'restaurant_owner' });
+      }
     } catch (e) {
-      console.warn('Error fetching customer profile:', e.message);
+      console.warn('Error fetching profile:', e.message);
     }
   },
 
-  signUp: async ({ email, password, name, phone }) => {
+  signUp: async ({ email, password, name, phone, role }) => {
+    const userRole = role || 'customer';
+    
     // Attempt Supabase sign up
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -69,30 +87,60 @@ export const useAuthStore = create((set, get) => ({
       options: { 
         data: { 
           full_name: name,
-          phone: phone || null
+          phone: phone || null,
+          role: userRole,
         } 
       },
     });
 
     if (error) throw new Error(error.message);
 
-    // Explicit profile insert (our DB trigger also guarantees this, but we keep this as backup)
     if (data?.user) {
       try {
-        await supabase.from('customers').upsert({
-          id: data.user.id,
-          name,
-          email,
-          phone: phone || null,
-        });
+        if (userRole === 'restaurant_owner') {
+          // Insert into restaurant_owners
+          await supabase.from('restaurant_owners').upsert({
+            id: data.user.id,
+            name,
+            email,
+            phone: phone || null,
+          });
+
+          // Automatically seed a default restaurant linked to this owner
+          await supabase.from('restaurants').insert({
+            name: `${name}'s Restaurant`,
+            cuisine_tags: ['North Indian', 'Biryani'],
+            address: 'TBD',
+            photo_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
+            owner_id: data.user.id,
+            is_open: true,
+          });
+
+          set({ 
+            user: data.user, 
+            customer: null,
+            owner: { id: data.user.id, name, email, phone },
+            role: 'restaurant_owner'
+          });
+        } else {
+          // Insert into customers
+          await supabase.from('customers').upsert({
+            id: data.user.id,
+            name,
+            email,
+            phone: phone || null,
+          });
+
+          set({ 
+            user: data.user, 
+            customer: { id: data.user.id, name, email, phone },
+            owner: null,
+            role: 'customer'
+          });
+        }
       } catch (e) {
         console.warn('Profile upsert warning:', e.message);
       }
-      
-      set({ 
-        user: data.user, 
-        customer: { id: data.user.id, name, email, phone } 
-      });
     }
 
     return data;
@@ -110,6 +158,6 @@ export const useAuthStore = create((set, get) => ({
   signOut: async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Sign out error:', error.message);
-    set({ user: null, customer: null });
+    set({ user: null, customer: null, owner: null, role: null });
   },
 }));

@@ -62,6 +62,7 @@ export async function createOrder({
   advancePaidAmount,
   remainingAmount,
   paymentReference,
+  numGuests,
 }) {
   // Insert order
   const { data: order, error: orderError } = await supabase
@@ -77,6 +78,7 @@ export async function createOrder({
       remaining_amount: remainingAmount,
       payment_status: 'advance_paid',
       payment_reference: paymentReference,
+      num_guests: numGuests,
     })
     .select()
     .single();

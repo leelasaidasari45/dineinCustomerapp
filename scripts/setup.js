@@ -39,6 +39,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Restaurant Owners
+CREATE TABLE IF NOT EXISTS restaurant_owners (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  phone TEXT,
+  email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Restaurants
 CREATE TABLE IF NOT EXISTS restaurants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -49,6 +58,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   avg_prep_time_minutes INTEGER DEFAULT 20,
   rating DECIMAL(2,1) DEFAULT 4.0,
   is_open BOOLEAN DEFAULT true,
+  owner_id UUID REFERENCES restaurant_owners(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -80,7 +90,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  restaurant_id UUID NOT NULL REFERENCES restaurants(id),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   status order_status DEFAULT 'pending_payment',
   arrival_time TIMESTAMPTZ,
   estimated_ready_time TIMESTAMPTZ,
@@ -89,6 +99,7 @@ CREATE TABLE IF NOT EXISTS orders (
   remaining_amount DECIMAL(10,2) DEFAULT 0,
   payment_status payment_status DEFAULT 'pending',
   payment_reference TEXT,
+  num_guests INTEGER DEFAULT 2,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -113,6 +124,7 @@ CREATE TABLE IF NOT EXISTS order_status_log (
 
 -- ── RLS ──────────────────────────────────────────────────────────────────────
 
+ALTER TABLE restaurant_owners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
@@ -120,9 +132,35 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_status_log ENABLE ROW LEVEL SECURITY;
 
+-- Restaurant Owners
+DO $$ BEGIN
+  CREATE POLICY "Owners read own profile" ON restaurant_owners FOR SELECT USING (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Owners insert own profile" ON restaurant_owners FOR INSERT WITH CHECK (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Owners update own profile" ON restaurant_owners FOR UPDATE USING (auth.uid() = id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 -- Restaurants: public read for open ones
 DO $$ BEGIN
   CREATE POLICY "Public read open restaurants" ON restaurants FOR SELECT USING (is_open = true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Owners insert own restaurant" ON restaurants FOR INSERT WITH CHECK (auth.uid() = owner_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Owners update own restaurant" ON restaurants FOR UPDATE USING (auth.uid() = owner_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Owners delete own restaurant" ON restaurants FOR DELETE USING (auth.uid() = owner_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
