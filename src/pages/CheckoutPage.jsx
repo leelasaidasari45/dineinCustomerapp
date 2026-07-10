@@ -31,29 +31,55 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, customer } = useAuthStore();
-  const { items, restaurantId, restaurantName, clearCart, selectedTableIds } = useCartStore();
+  const { items, restaurantId, restaurantName, clearCart, selectedTableIds, setSelectedTableIds, numGuests } = useCartStore();
   const { restaurant } = useRestaurant(restaurantId);
   const [showItems, setShowItems] = useState(false);
-  const [selectedTables, setSelectedTables] = useState([]);
+
+  const [tables, setTables] = useState([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [tablesError, setTablesError] = useState(null);
 
   useEffect(() => {
-    if (!selectedTableIds || selectedTableIds.length === 0) return;
+    if (!restaurantId) return;
+
+    let active = true;
 
     async function fetchTables() {
+      setTablesLoading(true);
+      setTablesError(null);
       try {
         const { data, error } = await supabase
           .from('restaurant_tables')
           .select('*')
-          .in('id', selectedTableIds);
-        if (!error && data) {
-          setSelectedTables(data);
-        }
+          .eq('restaurant_id', restaurantId)
+          .eq('is_blocked', false)
+          .order('table_number', { ascending: true });
+
+        if (!active) return;
+        if (error) throw error;
+        setTables(data || []);
       } catch (err) {
-        console.error('Error fetching selected tables:', err);
+        if (!active) return;
+        console.error('Error fetching tables:', err.message);
+        setTablesError('Failed to load available dining tables');
+      } finally {
+        if (active) setTablesLoading(false);
       }
     }
+
     fetchTables();
-  }, [selectedTableIds]);
+    return () => { active = false; };
+  }, [restaurantId]);
+
+  const handleTableToggle = (tableId) => {
+    if (selectedTableIds.includes(tableId)) {
+      setSelectedTableIds(selectedTableIds.filter(id => id !== tableId));
+    } else {
+      setSelectedTableIds([...selectedTableIds, tableId]);
+    }
+  };
+
+  const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
 
   const queryParams = new URLSearchParams(location.search);
   const initialTime = queryParams.get('time') || '';
@@ -65,7 +91,6 @@ export default function CheckoutPage() {
   }));
   const [paying, setPaying] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [numGuests, setNumGuests] = useState(2);
 
   const cartSubtotal = items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0);
   const cartTaxes   = Math.round(cartSubtotal * 0.05 * 100) / 100;
@@ -224,33 +249,58 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {/* Number of Guests */}
+            {/* Dining Table Selection */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-glow">
-                  <span className="text-base">👥</span>
+                <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-glow">
+                  <span className="text-base">🪑</span>
                 </div>
                 <div>
-                  <h2 className="font-heading font-bold text-base text-dark-800">Number of Guests</h2>
-                  <p className="text-gray-400 text-xs">How many people are dining?</p>
+                  <h2 className="font-heading font-bold text-base text-dark-800">Select Dining Table(s)</h2>
+                  <p className="text-gray-400 text-xs">Choose one or more available tables for your dine-in</p>
                 </div>
               </div>
-              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setNumGuests(num)}
-                    className={`h-11 rounded-xl text-sm font-semibold transition-all duration-200 border flex items-center justify-center
-                      ${numGuests === num 
-                        ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200' 
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
+
+              {tablesLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <span className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : tablesError ? (
+                <p className="text-red-500 text-xs">{tablesError}</p>
+              ) : tables.length === 0 ? (
+                <p className="text-gray-400 text-xs py-4 text-center">No tables available at this restaurant.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {tables.map((table) => {
+                    const isSelected = selectedTableIds.includes(table.id);
+                    return (
+                      <button
+                        key={table.id}
+                        type="button"
+                        onClick={() => handleTableToggle(table.id)}
+                        className={`p-4 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between h-24 text-wrap
+                          ${isSelected 
+                            ? 'border-amber-500 bg-amber-50/60 shadow-sm shadow-amber-100 scale-98' 
+                            : 'border-gray-100 hover:border-gray-200 bg-white hover:scale-101'
+                          }`}
+                      >
+                        <div className="flex justify-between items-start w-full">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg
+                            ${isSelected ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'}`}
+                          >
+                            Table {table.table_number.match(/\d+/)?.[0] || table.table_number}
+                          </span>
+                          <span className="text-base">🪑</span>
+                        </div>
+                        <div className="mt-1">
+                          <p className="font-bold text-dark-800 text-[13px] truncate">{table.table_number}</p>
+                          <p className="text-gray-400 text-[10px] font-medium">{table.capacity} Seater</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Payment method */}
@@ -403,7 +453,13 @@ export default function CheckoutPage() {
             {/* Pay Button */}
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={() => setShowConfirmModal(true)}
+              onClick={() => {
+                if (selectedTableIds.length === 0) {
+                  toast.error('Please select at least one dining table to proceed.');
+                  return;
+                }
+                setShowConfirmModal(true);
+              }}
               disabled={paying}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
