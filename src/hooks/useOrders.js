@@ -30,8 +30,8 @@ export function useOrders() {
               *,
               menu_items(name, is_veg)
             ),
-            order_dining_tables(
-              dining_tables(table_number)
+            order_tables(
+              restaurant_tables(table_number)
             )
           `)
           .eq('customer_id', user.id)
@@ -104,7 +104,7 @@ export async function createOrder({
 
   if (itemsError) throw itemsError;
 
-  // Insert order dining tables if selected
+  // Insert order tables if selected
   if (selectedTableIds && selectedTableIds.length > 0) {
     const orderTables = selectedTableIds.map(tableId => ({
       order_id: order.id,
@@ -112,7 +112,7 @@ export async function createOrder({
     }));
 
     const { error: tablesError } = await supabase
-      .from('order_dining_tables')
+      .from('order_tables')
       .insert(orderTables);
 
     if (tablesError) throw tablesError;

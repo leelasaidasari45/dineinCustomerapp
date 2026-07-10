@@ -30,8 +30,8 @@ export function useOrderTracking(orderId) {
               *,
               menu_items(name, photo_url, is_veg)
             ),
-            order_dining_tables(
-              dining_tables(table_number)
+            order_tables(
+              restaurant_tables(table_number)
             )
           `)
           .eq('id', orderId)

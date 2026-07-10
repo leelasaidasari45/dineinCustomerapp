@@ -152,10 +152,10 @@ export default function CartPage() {
       setTablesError(null);
       try {
         const { data, error } = await supabase
-          .from('dining_tables')
+          .from('restaurant_tables')
           .select('*')
           .eq('restaurant_id', restaurantId)
-          .eq('is_available', true)
+          .eq('is_blocked', false)
           .order('table_number', { ascending: true });
 
         if (!active) return;

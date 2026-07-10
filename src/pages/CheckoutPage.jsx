@@ -42,7 +42,7 @@ export default function CheckoutPage() {
     async function fetchTables() {
       try {
         const { data, error } = await supabase
-          .from('dining_tables')
+          .from('restaurant_tables')
           .select('*')
           .in('id', selectedTableIds);
         if (!error && data) {

@@ -114,24 +114,23 @@ CREATE TABLE IF NOT EXISTS order_status_log (
   changed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Dining Tables
-CREATE TABLE IF NOT EXISTS dining_tables (
+-- Restaurant Tables
+CREATE TABLE IF NOT EXISTS restaurant_tables (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   table_number TEXT NOT NULL,
   capacity INTEGER NOT NULL DEFAULT 4,
-  is_available BOOLEAN DEFAULT true,
+  is_blocked BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(restaurant_id, table_number)
 );
 
--- Order Dining Tables
-CREATE TABLE IF NOT EXISTS order_dining_tables (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Order Tables (junction table)
+CREATE TABLE IF NOT EXISTS order_tables (
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  table_id UUID NOT NULL REFERENCES dining_tables(id) ON DELETE CASCADE,
+  table_id UUID NOT NULL REFERENCES restaurant_tables(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(order_id, table_id)
+  PRIMARY KEY (order_id, table_id)
 );
 
 -- ============================================================
@@ -144,8 +143,8 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_status_log ENABLE ROW LEVEL SECURITY;
-ALTER TABLE dining_tables ENABLE ROW LEVEL SECURITY;
-ALTER TABLE order_dining_tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_tables ENABLE ROW LEVEL SECURITY;
 
 -- Restaurants: anyone can read open restaurants
 CREATE POLICY "Public read open restaurants"

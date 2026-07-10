@@ -122,6 +122,25 @@ CREATE TABLE IF NOT EXISTS order_status_log (
   changed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Restaurant Tables
+CREATE TABLE IF NOT EXISTS restaurant_tables (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  table_number TEXT NOT NULL,
+  capacity INTEGER NOT NULL DEFAULT 4,
+  is_blocked BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(restaurant_id, table_number)
+);
+
+-- Order Tables (junction table)
+CREATE TABLE IF NOT EXISTS order_tables (
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  table_id UUID NOT NULL REFERENCES restaurant_tables(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (order_id, table_id)
+);
+
 -- ── RLS ──────────────────────────────────────────────────────────────────────
 
 ALTER TABLE restaurant_owners ENABLE ROW LEVEL SECURITY;
@@ -131,6 +150,8 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_status_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_tables ENABLE ROW LEVEL SECURITY;
 
 -- Restaurant Owners
 DO $$ BEGIN
@@ -393,8 +414,8 @@ async function setup() {
     }
   }
 
-  // Step 4: Seed dining tables
-  console.log('\n🪑 Step 4: Seeding dining tables...');
+  // Step 4: Seed restaurant tables
+  console.log('\n🪑 Step 4: Seeding restaurant tables...');
   let totalTables = 0;
   for (const restaurant of insertedRestaurants) {
     const tableTemplate = [
@@ -409,11 +430,11 @@ async function setup() {
       restaurant_id: restaurant.id,
       table_number: t.table_number,
       capacity: t.capacity,
-      is_available: true,
+      is_blocked: false,
     }));
     
     const { error: tError, data } = await supabase
-      .from('dining_tables')
+      .from('restaurant_tables')
       .upsert(tables, { onConflict: 'restaurant_id,table_number', ignoreDuplicates: false })
       .select();
 
@@ -429,7 +450,7 @@ async function setup() {
   console.log(`\n🎉 Setup complete!`);
   console.log(`   📍 ${insertedRestaurants.length} restaurants`);
   console.log(`   🍽️  ~${totalItems} menu items`);
-  console.log(`   🪑  ~${totalTables} dining tables`);
+  console.log(`   🪑  ~${totalTables} restaurant tables`);
   console.log(`\n   Refresh http://localhost:5173/ to see live data!\n`);
 }
 
