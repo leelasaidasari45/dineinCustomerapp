@@ -7,7 +7,6 @@ const ACTIVE_STATUSES = ['pending_payment', 'confirmed', 'preparing', 'ready'];
 /**
  * Returns the customer's currently active order (if any).
  * An order is "active" if its status is one of: pending_payment, confirmed, preparing, ready.
- * Returns null when loading or when no active order exists.
  */
 export function useActiveOrder() {
   const { user } = useAuthStore();
@@ -23,7 +22,7 @@ export function useActiveOrder() {
 
     let active = true;
 
-    async function fetch() {
+    async function fetchActiveOrder() {
       setLoading(true);
       try {
         const { data, error } = await supabase
@@ -36,28 +35,25 @@ export function useActiveOrder() {
           .maybeSingle();
 
         if (!active) return;
-        if (error) { console.error(error); setActiveOrder(null); }
-        else setActiveOrder(data);
+        if (error) {
+          console.error('useActiveOrder fetch error:', error);
+          setActiveOrder(null);
+        } else {
+          setActiveOrder(data);
+        }
+      } catch (err) {
+        if (!active) return;
+        console.error('useActiveOrder error:', err);
+        setActiveOrder(null);
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    fetch();
-
-    // Subscribe to realtime so the lock lifts the moment the owner marks completed
-    const channel = supabase
-      .channel(`active-order-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        () => { if (active) fetch(); }
-      )
-      .subscribe();
+    fetchActiveOrder();
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
     };
   }, [user]);
 
