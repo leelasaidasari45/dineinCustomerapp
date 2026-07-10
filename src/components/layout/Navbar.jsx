@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, UtensilsCrossed, LogOut, History, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, UtensilsCrossed, LogOut, History, ChevronDown, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
+import { useActiveOrder } from '../../hooks/useActiveOrder';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Navbar() {
   const items = useCartStore((s) => s.items);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { activeOrder } = useActiveOrder();
 
   // All hooks must be called before any conditional return (Rules of Hooks)
   if (location.pathname !== '/') return null;
@@ -56,7 +58,32 @@ export default function Navbar() {
         {/* ── Right Actions ── */}
         <div className="flex items-center gap-4">
 
-          {/* Cart Outline Button (Swiggy style) */}
+          {/* Track Order pill — visible only when there is an active order */}
+          <AnimatePresence>
+            {user && activeOrder && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85, x: 10 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.85, x: 10 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              >
+                <Link
+                  to={`/track/${activeOrder.id}`}
+                  className="relative flex items-center gap-2 h-11 px-3 sm:px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-emerald-500/30 overflow-hidden"
+                >
+                  {/* Pulse ring */}
+                  <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                  </span>
+                  <span className="hidden sm:inline">Track Order</span>
+                  <span className="sm:hidden">Track</span>
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Cart Outline Button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleCartClick}
