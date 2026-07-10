@@ -117,7 +117,9 @@ export default function OrderHistoryPage() {
 
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
                         <span className="text-gray-500">
-                          Paid: <span className="font-semibold text-emerald-600">{formatCurrency(order.advance_paid_amount)}</span> · Pay at Restaurant: <span className="font-semibold text-amber-600">{formatCurrency(order.remaining_amount)}</span> · Guests: <span className="font-semibold text-dark-800">{order.num_guests || 2}</span>
+                          Paid: <span className="font-semibold text-emerald-600">{formatCurrency(order.advance_paid_amount)}</span> · Pay at Restaurant: <span className="font-semibold text-amber-600">{formatCurrency(order.remaining_amount)}</span> · Guests: <span className="font-semibold text-dark-800">{order.num_guests || 2}</span>{order.order_dining_tables && order.order_dining_tables.length > 0 && (
+                            <> · Tables: <span className="font-semibold text-dark-800">{order.order_dining_tables.map(ot => ot.dining_tables?.table_number.match(/Table\s+\d+/)?.[0] || ot.dining_tables?.table_number).filter(Boolean).join(', ')}</span></>
+                          )}
                         </span>
                         <div className="flex items-center text-amber-600 font-medium">
                           <span>Details</span>

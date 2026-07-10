@@ -29,6 +29,9 @@ export function useOrders() {
             order_items(
               *,
               menu_items(name, is_veg)
+            ),
+            order_dining_tables(
+              dining_tables(table_number)
             )
           `)
           .eq('customer_id', user.id)
@@ -63,6 +66,7 @@ export async function createOrder({
   remainingAmount,
   paymentReference,
   numGuests,
+  selectedTableIds,
 }) {
   // Insert order
   const { data: order, error: orderError } = await supabase
@@ -99,6 +103,20 @@ export async function createOrder({
     .insert(orderItems);
 
   if (itemsError) throw itemsError;
+
+  // Insert order dining tables if selected
+  if (selectedTableIds && selectedTableIds.length > 0) {
+    const orderTables = selectedTableIds.map(tableId => ({
+      order_id: order.id,
+      table_id: tableId,
+    }));
+
+    const { error: tablesError } = await supabase
+      .from('order_dining_tables')
+      .insert(orderTables);
+
+    if (tablesError) throw tablesError;
+  }
 
   // Insert initial status log
   await supabase.from('order_status_log').insert({

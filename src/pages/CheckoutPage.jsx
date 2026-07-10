@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { ArrowLeft, ShoppingBag, MapPin, Clock, CreditCard, CheckCircle2, Leaf, Drumstick, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -30,9 +31,29 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, customer } = useAuthStore();
-  const { items, restaurantId, restaurantName, clearCart } = useCartStore();
+  const { items, restaurantId, restaurantName, clearCart, selectedTableIds } = useCartStore();
   const { restaurant } = useRestaurant(restaurantId);
   const [showItems, setShowItems] = useState(false);
+  const [selectedTables, setSelectedTables] = useState([]);
+
+  useEffect(() => {
+    if (!selectedTableIds || selectedTableIds.length === 0) return;
+
+    async function fetchTables() {
+      try {
+        const { data, error } = await supabase
+          .from('dining_tables')
+          .select('*')
+          .in('id', selectedTableIds);
+        if (!error && data) {
+          setSelectedTables(data);
+        }
+      } catch (err) {
+        console.error('Error fetching selected tables:', err);
+      }
+    }
+    fetchTables();
+  }, [selectedTableIds]);
 
   const queryParams = new URLSearchParams(location.search);
   const initialTime = queryParams.get('time') || '';
@@ -106,6 +127,7 @@ export default function CheckoutPage() {
           remainingAmount,
           paymentReference: mockPaymentId,
           numGuests,
+          selectedTableIds,
         });
         clearCart();
         toast.success('Payment Successful! Order placed. 🎉');
@@ -163,12 +185,20 @@ export default function CheckoutPage() {
                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                   <span className="text-lg">🍽️</span>
                 </div>
-                <div>
-                  <p className="font-semibold text-dark-800 text-sm">{restaurantName}</p>
+                <div className="flex-grow min-w-0">
+                  <p className="font-semibold text-dark-800 text-sm truncate">{restaurantName}</p>
                   {restaurant?.address && (
-                    <p className="text-gray-500 text-xs mt-0.5">{restaurant.address}</p>
+                    <p className="text-gray-500 text-xs mt-0.5 truncate">{restaurant.address}</p>
                   )}
-                  <span className="inline-flex items-center gap-1 mt-1 bg-emerald-50 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-lg">
+                  {selectedTables.length > 0 && (
+                    <div className="text-amber-600 font-bold text-[11px] mt-1 flex items-center gap-1 flex-wrap">
+                      <span>🪑 Booked:</span>
+                      <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[10px] uppercase">
+                        {selectedTables.map(t => t.table_number.match(/Table\s+\d+/)?.[0] || t.table_number).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  <span className="inline-flex items-center gap-1 mt-1.5 bg-emerald-50 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-lg">
                     <CheckCircle2 className="w-3 h-3" /> Dine-in Pre-order
                   </span>
                 </div>
@@ -442,6 +472,15 @@ export default function CheckoutPage() {
                   <span className="text-gray-500 font-medium">Guests</span>
                   <span className="font-bold text-dark-800">{numGuests} {numGuests === 1 ? 'Guest' : 'Guests'}</span>
                 </div>
+
+                {selectedTables.length > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Table(s)</span>
+                    <span className="font-bold text-dark-800">
+                      {selectedTables.map(t => t.table_number.match(/Table\s+\d+/)?.[0] || t.table_number).join(', ')}
+                    </span>
+                  </div>
+                )}
                 
                 <div className="h-px bg-gray-200" />
 

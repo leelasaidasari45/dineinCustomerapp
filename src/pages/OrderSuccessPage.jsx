@@ -154,6 +154,23 @@ export default function OrderSuccessPage() {
                   </div>
                 </div>
 
+                {order.order_dining_tables && order.order_dining_tables.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs">🪑</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Booked Table(s)</p>
+                      <p className="font-semibold text-dark-800 text-sm">
+                        {order.order_dining_tables
+                          .map(ot => ot.dining_tables?.table_number.match(/Table\s+\d+/)?.[0] || ot.dining_tables?.table_number)
+                          .filter(Boolean)
+                          .join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-3 border-t border-gray-100 flex justify-between">
                   <div>
                     <p className="text-xs text-gray-500">Total Bill</p>

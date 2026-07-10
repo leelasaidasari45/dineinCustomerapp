@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 import {
   ArrowLeft, Trash2, Plus, Minus, ShoppingBag,
   ChevronRight, Tag, Store, Leaf, Drumstick,
@@ -134,7 +136,59 @@ function BillRow({ label, value, highlight, large }) {
 // ── Main page ─────────────────────────────────────────────────
 export default function CartPage() {
   const navigate = useNavigate();
-  const { items, updateQuantity, removeItem, restaurantName, clearCart } = useCartStore();
+  const { items, updateQuantity, removeItem, restaurantName, clearCart, restaurantId, selectedTableIds, setSelectedTableIds } = useCartStore();
+
+  const [tables, setTables] = useState([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [tablesError, setTablesError] = useState(null);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    let active = true;
+
+    async function fetchTables() {
+      setTablesLoading(true);
+      setTablesError(null);
+      try {
+        const { data, error } = await supabase
+          .from('dining_tables')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .eq('is_available', true)
+          .order('table_number', { ascending: true });
+
+        if (!active) return;
+        if (error) throw error;
+        setTables(data || []);
+      } catch (err) {
+        if (!active) return;
+        console.error('Error fetching tables:', err.message);
+        setTablesError('Failed to load available dining tables');
+      } finally {
+        if (active) setTablesLoading(false);
+      }
+    }
+
+    fetchTables();
+    return () => { active = false; };
+  }, [restaurantId]);
+
+  const handleTableToggle = (tableId) => {
+    if (selectedTableIds.includes(tableId)) {
+      setSelectedTableIds(selectedTableIds.filter(id => id !== tableId));
+    } else {
+      setSelectedTableIds([...selectedTableIds, tableId]);
+    }
+  };
+
+  const handleCheckoutClick = () => {
+    if (selectedTableIds.length === 0) {
+      toast.error('Please select at least one dining table to proceed.');
+      return;
+    }
+    navigate('/checkout');
+  };
 
   const totalItems  = items.reduce((s, i) => s + i.quantity, 0);
   const cartSubtotal = items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0);
@@ -231,6 +285,60 @@ export default function CartPage() {
               </AnimatePresence>
             </div>
 
+            {/* Dining Table Selection */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-glow">
+                  <span className="text-base">🪑</span>
+                </div>
+                <div>
+                  <h2 className="font-heading font-bold text-base text-dark-800">Select Dining Table(s)</h2>
+                  <p className="text-gray-400 text-xs">Choose one or more available tables for your dine-in</p>
+                </div>
+              </div>
+
+              {tablesLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <span className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : tablesError ? (
+                <p className="text-red-500 text-xs">{tablesError}</p>
+              ) : tables.length === 0 ? (
+                <p className="text-gray-400 text-xs py-4 text-center">No tables available at this restaurant.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {tables.map((table) => {
+                    const isSelected = selectedTableIds.includes(table.id);
+                    return (
+                      <button
+                        key={table.id}
+                        type="button"
+                        onClick={() => handleTableToggle(table.id)}
+                        className={`p-4 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between h-24 text-wrap
+                          ${isSelected 
+                            ? 'border-amber-500 bg-amber-50/60 shadow-sm shadow-amber-100 scale-98' 
+                            : 'border-gray-100 hover:border-gray-200 bg-white hover:scale-101'
+                          }`}
+                      >
+                        <div className="flex justify-between items-start w-full">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg
+                            ${isSelected ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'}`}
+                          >
+                            Table {table.table_number.match(/\d+/)?.[0] || table.table_number}
+                          </span>
+                          <span className="text-base">🪑</span>
+                        </div>
+                        <div className="mt-1">
+                          <p className="font-bold text-dark-800 text-[13px] truncate">{table.table_number}</p>
+                          <p className="text-gray-400 text-[10px] font-medium">{table.capacity} Seater</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Info banner */}
             <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
               <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -285,7 +393,7 @@ export default function CartPage() {
             {/* Checkout CTA */}
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/checkout')}
+              onClick={handleCheckoutClick}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2"
             >
               Proceed to Checkout

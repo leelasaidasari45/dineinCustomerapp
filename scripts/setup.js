@@ -393,10 +393,43 @@ async function setup() {
     }
   }
 
+  // Step 4: Seed dining tables
+  console.log('\n🪑 Step 4: Seeding dining tables...');
+  let totalTables = 0;
+  for (const restaurant of insertedRestaurants) {
+    const tableTemplate = [
+      { table_number: 'Table 1 (2 Seater)', capacity: 2 },
+      { table_number: 'Table 2 (2 Seater)', capacity: 2 },
+      { table_number: 'Table 3 (4 Seater)', capacity: 4 },
+      { table_number: 'Table 4 (4 Seater)', capacity: 4 },
+      { table_number: 'Table 5 (6 Seater)', capacity: 6 },
+      { table_number: 'Table 6 (8 Seater)', capacity: 8 },
+    ];
+    const tables = tableTemplate.map(t => ({
+      restaurant_id: restaurant.id,
+      table_number: t.table_number,
+      capacity: t.capacity,
+      is_available: true,
+    }));
+    
+    const { error: tError, data } = await supabase
+      .from('dining_tables')
+      .upsert(tables, { onConflict: 'restaurant_id,table_number', ignoreDuplicates: false })
+      .select();
+
+    if (tError) {
+      console.error(`  ❌ ${restaurant.name} tables:`, tError.message);
+    } else {
+      totalTables += (data || tables).length;
+      console.log(`  ✅ ${restaurant.name}: ${tables.length} tables`);
+    }
+  }
+
   console.log('\n' + '━'.repeat(50));
   console.log(`\n🎉 Setup complete!`);
   console.log(`   📍 ${insertedRestaurants.length} restaurants`);
   console.log(`   🍽️  ~${totalItems} menu items`);
+  console.log(`   🪑  ~${totalTables} dining tables`);
   console.log(`\n   Refresh http://localhost:5173/ to see live data!\n`);
 }
 

@@ -7,6 +7,7 @@ export const useCartStore = create(
       items: [], // { menuItem, quantity, notes }
       restaurantId: null,
       restaurantName: null,
+      selectedTableIds: [],
 
       addItem: (menuItem, quantity = 1, notes = '') => {
         const { items, restaurantId } = get();
@@ -70,7 +71,8 @@ export const useCartStore = create(
         });
       },
 
-      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null }),
+      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, selectedTableIds: [] }),
+      setSelectedTableIds: (ids) => set({ selectedTableIds: ids }),
 
       // Plain selector functions (NOT getters) — getters break persist serialization
       getItemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
@@ -99,6 +101,7 @@ export const useCartStore = create(
         items: state.items,
         restaurantId: state.restaurantId,
         restaurantName: state.restaurantName,
+        selectedTableIds: state.selectedTableIds || [],
       }),
     }
   )

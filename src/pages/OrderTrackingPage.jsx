@@ -94,6 +94,15 @@ export default function OrderTrackingPage() {
                     <span className="text-xs">👥</span>
                     Guests: {order.num_guests || 2} {order.num_guests === 1 ? 'Guest' : 'Guests'}
                   </p>
+                  {order.order_dining_tables && order.order_dining_tables.length > 0 && (
+                    <p className="flex items-center gap-1.5">
+                      <span className="text-xs">🪑</span>
+                      Tables: {order.order_dining_tables
+                        .map(ot => ot.dining_tables?.table_number.match(/Table\s+\d+/)?.[0] || ot.dining_tables?.table_number)
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                  )}
                 </div>
               </div>
               <span className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
