@@ -1,58 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
+import { useOrdersCache } from '../store/ordersCache';
+
+const STALE_AFTER_MS = 30_000; // 30 seconds — background refresh if cache is older than this
 
 export function useOrders() {
   const { user } = useAuthStore();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { orders: cachedOrders, lastFetchedAt, setOrders, clearOrders } = useOrdersCache();
+
+  // loading = true ONLY when there is NO cached data yet (first visit)
+  const [loading, setLoading] = useState(cachedOrders.length === 0);
   const [error, setError] = useState(null);
+
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!user) {
+      clearOrders();
+      setLoading(false);
+      return;
+    }
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          restaurants(name, photo_url, cuisine_tags),
+          order_items(
+            *,
+            menu_items(name, is_veg)
+          ),
+          order_tables(
+            restaurant_tables(table_number)
+          )
+        `)
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (err) setError(err.message);
+      else setOrders(data || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
-      setOrders([]);
+      clearOrders();
       setLoading(false);
       return;
     }
 
-    let active = true;
+    const isStale = !lastFetchedAt || (Date.now() - lastFetchedAt > STALE_AFTER_MS);
 
-    async function fetchOrders() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error: err } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            restaurants(name, photo_url, cuisine_tags),
-            order_items(
-              *,
-              menu_items(name, is_veg)
-            ),
-            order_tables(
-              restaurant_tables(table_number)
-            )
-          `)
-          .eq('customer_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (!active) return;
-        if (err) setError(err.message);
-        else setOrders(data || []);
-      } catch (err) {
-        if (!active) return;
-        setError(err.message);
-      } finally {
-        if (active) setLoading(false);
-      }
+    if (cachedOrders.length === 0) {
+      // No cache — full loading fetch
+      fetchOrders(false);
+    } else if (isStale) {
+      // Cache exists but is stale — show cached, refresh silently
+      fetchOrders(true);
     }
-
-    fetchOrders();
-    return () => { active = false; };
+    // else cache is fresh — just use it, no fetch needed
   }, [user]);
 
-  return { orders, loading, error, refetch: () => {} };
+  return { orders: cachedOrders, loading, error, refetch: () => fetchOrders(false) };
 }
 
 export async function createOrder({
