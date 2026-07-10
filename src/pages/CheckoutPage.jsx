@@ -31,7 +31,18 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, customer } = useAuthStore();
-  const { items, restaurantId, restaurantName, clearCart, selectedTableIds, setSelectedTableIds, numGuests } = useCartStore();
+  const { 
+    items, 
+    restaurantId, 
+    restaurantName, 
+    clearCart, 
+    selectedTableIds, 
+    setSelectedTableIds, 
+    numGuests,
+    arrivalDate,
+    arrivalSlot,
+    setArrivalInfo: setStoreArrivalInfo
+  } = useCartStore();
   const { restaurant } = useRestaurant(restaurantId);
   const [showItems, setShowItems] = useState(false);
 
@@ -86,8 +97,8 @@ export default function CheckoutPage() {
   const initialDate = queryParams.get('date') || '';
 
   const [arrivalInfo, setArrivalInfo] = useState(() => ({
-    arrivalDate: arrivalInfoState?.arrivalDate || getArrivalDate('+30'),
-    slot: arrivalInfoState?.slot || '+30',
+    arrivalDate: arrivalDate || getArrivalDate('+30'),
+    slot: arrivalSlot || '+30',
   }));
 
   const cartSubtotal = items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0);
@@ -213,7 +224,10 @@ export default function CheckoutPage() {
               </div>
               <ArrivalTimePicker
                 avgPrepMinutes={restaurant?.avg_prep_time_minutes || 20}
-                onChange={setArrivalInfo}
+                onChange={(info) => {
+                  setArrivalInfo(info);
+                  setStoreArrivalInfo(info.arrivalDate, info.slot);
+                }}
                 initialTime={initialTime}
                 initialDate={initialDate}
               />
@@ -428,6 +442,7 @@ export default function CheckoutPage() {
                   toast.error('Please select at least one dining table to proceed.');
                   return;
                 }
+                setStoreArrivalInfo(arrivalInfo.arrivalDate, arrivalInfo.slot);
                 navigate('/checkout/summary');
               }}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-bold text-lg py-4 rounded-2xl shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2"
