@@ -268,12 +268,13 @@ export default function OrderSuccessPage() {
               Order from Another Restaurant
             </Link>
 
+
             {!loading && order && order.status !== 'cancelled' && (
               <button
                 type="button"
                 onClick={handleCancelClick}
                 disabled={checkingCancel}
-                className="mt-4 text-red-500 hover:text-red-600 font-semibold text-sm transition-all duration-200 text-center block mx-auto underline disabled:opacity-50"
+                className="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 font-semibold px-6 py-3 rounded-2xl border border-red-200 hover:border-red-300 transition-all duration-200 active:scale-95 w-full text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {checkingCancel ? 'Checking policy...' : 'Cancel Order'}
               </button>
