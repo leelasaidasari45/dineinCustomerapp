@@ -159,61 +159,87 @@ export default function OrderPreviewPage() {
         <div className="max-w-5xl mx-auto px-4 pt-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
           {/* LEFT COLUMN: Pre-order details breakdown */}
           <div className="space-y-6">
-            {/* Dine-in Details summary */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-              <h2 className="font-heading font-extrabold text-lg text-dark-800 mb-4 flex items-center gap-2">
-                <span>🪑</span> Dine-in Summary
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold shadow-sm">
-                    🍽️
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-dark-800 text-sm truncate">{restaurantName}</p>
+            {/* Dine-in Details Pass */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Ticket header */}
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white relative">
+                {/* Decorative circles to look like a ticket stub */}
+                <div className="absolute left-0 bottom-0 w-3 h-6 bg-cream-100 rounded-r-full -mb-3 transform -translate-y-1/2" />
+                <div className="absolute right-0 bottom-0 w-3 h-6 bg-cream-100 rounded-l-full -mb-3 transform -translate-y-1/2" />
+                
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="bg-white/20 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      Dine-in Pre-order Pass
+                    </span>
+                    <h2 className="font-heading font-extrabold text-2xl mt-2.5 tracking-tight">{restaurantName}</h2>
                     {restaurant?.address && (
-                      <p className="text-gray-400 text-xs truncate mt-0.5">{restaurant.address}</p>
+                      <p className="text-amber-50 text-xs mt-1 flex items-center gap-1.5 opacity-95">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        {restaurant.address}
+                      </p>
                     )}
                   </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold shadow-sm">
-                    ⏰
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Arrival Time</p>
-                    <p className="font-bold text-dark-800 text-sm mt-0.5">
-                      {arrivalDate ? `${formatDate(arrivalDate)}, ${formatTime(arrivalDate)}` : '—'}
-                    </p>
+                  <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+                    🍽️
                   </div>
                 </div>
+              </div>
 
-                <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold shadow-sm">
-                    👥
+              {/* Ticket details grid */}
+              <div className="p-6 bg-white border-t border-dashed border-gray-200 relative">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Arrival Time */}
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Arrival Time</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-dark-800 text-sm truncate">
+                          {arrivalDate ? formatTime(arrivalDate) : '—'}
+                        </p>
+                        <p className="text-gray-400 text-[10px] font-medium truncate">
+                          {arrivalDate ? formatDate(arrivalDate) : '—'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Guests</p>
-                    <p className="font-bold text-dark-800 text-sm mt-0.5">
-                      {numGuests} {numGuests === 1 ? 'Guest' : 'Guests'}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold shadow-sm">
-                    🪑
+                  {/* Guests */}
+                  <div className="space-y-1 sm:border-l sm:border-gray-100 sm:pl-6">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Table For</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                        <span className="text-sm">👥</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-dark-800 text-sm">
+                          {numGuests} {numGuests === 1 ? 'Guest' : 'Guests'}
+                        </p>
+                        <p className="text-gray-400 text-[10px] font-medium">Dine-in Party</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Tables Booked</p>
-                    <p className="font-bold text-amber-700 text-sm mt-0.5 truncate">
-                      {selectedTables.length > 0 
-                        ? selectedTables.map(t => t.table_number.match(/Table\s+\d+/)?.[0] || t.table_number).join(', ')
-                        : 'No tables selected'
-                      }
-                    </p>
+
+                  {/* Tables Booked */}
+                  <div className="space-y-1 sm:border-l sm:border-gray-100 sm:pl-6">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tables Reserved</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
+                        <span className="text-sm">🪑</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-amber-700 text-sm truncate">
+                          {selectedTables.length > 0 
+                            ? selectedTables.map(t => t.table_number.match(/Table\s+\d+/)?.[0] || t.table_number).join(', ')
+                            : 'No tables'
+                          }
+                        </p>
+                        <p className="text-gray-400 text-[10px] font-medium">Table reservation</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -221,26 +247,45 @@ export default function OrderPreviewPage() {
 
             {/* Selected Items details card */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 pb-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-6 pb-4 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
                 <h3 className="font-heading font-extrabold text-base text-dark-800 flex items-center gap-2">
-                  <span>🛍️</span> Review Items ({items.reduce((s, i) => s + i.quantity, 0)})
+                  <span className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center text-xs">🛍️</span>
+                  Review Pre-order Items
                 </h3>
+                <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  {items.reduce((s, i) => s + i.quantity, 0)} Items
+                </span>
               </div>
-              <div className="divide-y divide-gray-50 px-6 max-h-[360px] overflow-y-auto">
+              <div className="divide-y divide-gray-100 px-6 max-h-[360px] overflow-y-auto">
                 {items.map((item) => (
-                  <div key={item.menuItem.id} className="py-4 flex items-start gap-4">
-                    <span className="flex-shrink-0 mt-1">
-                      {item.menuItem.is_veg ? <span className="veg-dot" /> : <span className="nonveg-dot" />}
-                    </span>
-                    <div className="flex-grow min-w-0">
-                      <p className="font-bold text-dark-800 text-sm leading-snug">{item.menuItem.name}</p>
-                      {item.notes && (
-                        <p className="text-gray-400 text-xs mt-0.5 italic">"{item.notes}"</p>
-                      )}
+                  <div key={item.menuItem.id} className="py-4 flex items-center justify-between gap-4 hover:bg-gray-50/30 -mx-6 px-6 transition-all duration-200">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <span className="flex-shrink-0 mt-0.5">
+                        {item.menuItem.is_veg ? (
+                          <span className="inline-flex w-4.5 h-4.5 border border-emerald-500 rounded flex-shrink-0 items-center justify-center bg-emerald-50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          </span>
+                        ) : (
+                          <span className="inline-flex w-4.5 h-4.5 border border-red-500 rounded flex-shrink-0 items-center justify-center bg-red-50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                          </span>
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-dark-800 text-sm leading-snug">{item.menuItem.name}</p>
+                        {item.notes ? (
+                          <div className="bg-gray-50 border-l-2 border-amber-400 px-2.5 py-1 mt-1.5 rounded-r-lg">
+                            <p className="text-[11px] text-gray-500 leading-normal italic">"{item.notes}"</p>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-xs text-gray-400">×{item.quantity}</p>
-                      <p className="font-bold text-dark-800 text-sm mt-0.5">
+                    
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-lg">
+                        Qty: {item.quantity}
+                      </span>
+                      <p className="font-heading font-bold text-dark-800 text-sm w-16 text-right">
                         {formatCurrency(item.menuItem.price * item.quantity)}
                       </p>
                     </div>
