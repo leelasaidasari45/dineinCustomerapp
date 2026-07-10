@@ -50,7 +50,7 @@ export function useActiveOrder() {
       .channel(`active-order-${user.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `customer_id=eq.${user.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
         () => { if (active) fetch(); }
       )
       .subscribe();
