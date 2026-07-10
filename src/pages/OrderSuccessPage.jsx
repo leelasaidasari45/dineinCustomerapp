@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { MapPin, Clock, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, ChevronRight, AlertTriangle } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 import PageTransition from '../components/layout/PageTransition';
 import { useOrderTracking } from '../hooks/useOrderTracking';
 import { formatCurrency, formatTime, formatDate } from '../utils/formatters';
@@ -38,6 +41,60 @@ export default function OrderSuccessPage() {
   const { orderId } = useParams();
   const { order, loading } = useOrderTracking(orderId);
   const confettiFired = useRef(false);
+  const { user } = useAuthStore();
+
+  const [checkingCancel, setCheckingCancel] = useState(false);
+  const [showCancelPopup, setShowCancelPopup] = useState(false);
+  const [cancelCount, setCancelCount] = useState(0);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelClick = async () => {
+    if (!user) return;
+    setCheckingCancel(true);
+    try {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('customer_id', user.id)
+        .eq('status', 'cancelled');
+      
+      if (error) throw error;
+      setCancelCount(count || 0);
+      setShowCancelPopup(true);
+    } catch (err) {
+      toast.error('Failed to check cancellation policy.');
+      console.error(err);
+    } finally {
+      setCheckingCancel(false);
+    }
+  };
+
+  const confirmCancellation = async () => {
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      await supabase
+        .from('order_status_log')
+        .insert({
+          order_id: orderId,
+          status: 'cancelled'
+        });
+
+      toast.success('Pre-order cancelled successfully.');
+      setShowCancelPopup(false);
+    } catch (err) {
+      toast.error('Order cancellation failed.');
+      console.error(err);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     if (!confettiFired.current) {
@@ -110,8 +167,13 @@ export default function OrderSuccessPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-heading font-bold text-dark-800">Order Details</h3>
-                <span className="px-3 py-1 bg-green-50 text-green-600 text-xs font-semibold rounded-full">
-                  Confirmed
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full
+                  ${order.status === 'cancelled' 
+                    ? 'bg-red-50 text-red-600' 
+                    : 'bg-green-50 text-green-600'
+                  }`}
+                >
+                  {order.status === 'cancelled' ? 'Cancelled' : 'Confirmed'}
                 </span>
               </div>
 
@@ -196,16 +258,118 @@ export default function OrderSuccessPage() {
             transition={{ delay: 1.0 }}
             className="flex flex-col gap-3"
           >
-            <Link to={`/track/${orderId}`} className="btn-primary text-center w-full flex items-center justify-center gap-2">
-              Track Order Live
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            {!loading && order && order.status !== 'cancelled' && (
+              <Link to={`/track/${orderId}`} className="btn-primary text-center w-full flex items-center justify-center gap-2">
+                Track Order Live
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            )}
             <Link to="/" className="btn-secondary text-center w-full">
               Order from Another Restaurant
             </Link>
+
+            {!loading && order && order.status !== 'cancelled' && (
+              <button
+                type="button"
+                onClick={handleCancelClick}
+                disabled={checkingCancel}
+                className="mt-4 text-red-500 hover:text-red-600 font-semibold text-sm transition-all duration-200 text-center block mx-auto underline disabled:opacity-50"
+              >
+                {checkingCancel ? 'Checking policy...' : 'Cancel Order'}
+              </button>
+            )}
           </motion.div>
         </div>
       </div>
+      {/* Cancellation Warning Modal */}
+      <AnimatePresence>
+        {showCancelPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !cancelling && setShowCancelPopup(false)}
+              className="absolute inset-0 bg-dark-800/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden relative z-10 border border-gray-100 p-6 text-center"
+            >
+              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <AlertTriangle className="w-7 h-7 text-red-500" />
+              </div>
+
+              <h3 className="font-heading font-extrabold text-xl text-dark-800 mb-3">
+                Cancel Pre-Order
+              </h3>
+
+              {cancelCount < 3 ? (
+                <div className="space-y-3 mb-6 text-left text-sm text-gray-600">
+                  <p>
+                    For the first 3 cancellations you will get refund, after that no refund.
+                  </p>
+                  <div className="bg-emerald-50 border-l-2 border-emerald-500 p-3 rounded-r-lg text-emerald-800">
+                    <p className="font-bold">Refund Status: Eligible</p>
+                    <p className="text-xs mt-0.5">
+                      You have cancelled <strong>{cancelCount}</strong> order(s) so far. Since this is within the limit, you will receive a full refund of your 50% advance payment.
+                    </p>
+                  </div>
+                  <p className="text-center font-bold text-dark-800 mt-2">
+                    Do you want to cancel this order?
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 mb-6 text-left text-sm text-gray-600">
+                  <p>
+                    For the first 3 cancellations you will get refund, after that no refund.
+                  </p>
+                  <div className="bg-red-50 border-l-2 border-red-500 p-3 rounded-r-lg text-red-800">
+                    <p className="font-bold">Refund Status: NOT Eligible</p>
+                    <p className="text-xs mt-0.5">
+                      You have already cancelled <strong>{cancelCount}</strong> order(s). Because you have exceeded the 3-cancellation limit, you will not receive any refund for this cancellation.
+                    </p>
+                  </div>
+                  <p className="text-center font-bold text-dark-800 mt-2">
+                    Do you want to cancel this order?
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelPopup(false)}
+                  disabled={cancelling}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50"
+                >
+                  No, Keep It
+                </button>
+                <button
+                  onClick={confirmCancellation}
+                  disabled={cancelling}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-heading font-bold py-3 rounded-xl shadow-md shadow-red-200 transition-all duration-200 flex items-center justify-center gap-1.5 disabled:opacity-75"
+                >
+                  {cancelling ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Yes, Cancel'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }
