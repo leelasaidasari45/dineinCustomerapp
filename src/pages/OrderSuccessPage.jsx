@@ -265,7 +265,7 @@ export default function OrderSuccessPage() {
               </Link>
             )}
             <Link to="/" className="btn-secondary text-center w-full">
-              Order from Another Restaurant
+              Back to Home
             </Link>
 
 

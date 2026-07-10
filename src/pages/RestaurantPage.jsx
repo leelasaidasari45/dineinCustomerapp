@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Clock, MapPin, ShoppingBag } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Star, Clock, MapPin, ShoppingBag, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PageTransition from '../components/layout/PageTransition';
 import MenuCategoryTabs from '../components/menu/MenuCategoryTabs';
@@ -8,6 +8,7 @@ import MenuItemCard from '../components/menu/MenuItemCard';
 import CartBar from '../components/menu/CartBar';
 import { useRestaurant } from '../hooks/useRestaurants';
 import { useMenuItems } from '../hooks/useMenuItems';
+import { useActiveOrder } from '../hooks/useActiveOrder';
 
 const FALLBACK_BANNER = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80';
 
@@ -30,8 +31,10 @@ function MenuSkeleton() {
 
 export default function RestaurantPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { restaurant, loading: rLoading } = useRestaurant(id);
   const { menuItems, categories, loading: mLoading } = useMenuItems(id);
+  const { activeOrder, loading: activeOrderLoading } = useActiveOrder();
   const [activeCategory, setActiveCategory] = useState('');
   const sectionRefs = useRef({});
 
@@ -95,6 +98,53 @@ export default function RestaurantPage() {
             <p className="text-gray-500 text-lg">Restaurant not found</p>
             <Link to="/" className="btn-primary mt-4 inline-block">Go Home</Link>
           </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  // Block access if customer has an active order at a DIFFERENT restaurant
+  const isLocked = !activeOrderLoading && activeOrder && activeOrder.restaurant_id !== id;
+
+  if (isLocked) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen pt-20 pb-8 px-4 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl shadow-card border border-gray-100 p-8 max-w-md w-full text-center"
+          >
+            <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-100">
+              <Lock className="w-8 h-8 text-amber-500" />
+            </div>
+            <h2 className="font-heading font-extrabold text-xl text-dark-800 mb-2">
+              You have an active order
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-2">
+              You currently have an active pre-order at
+            </p>
+            <p className="font-heading font-bold text-amber-600 text-lg mb-4">
+              {activeOrder.restaurants?.name || 'another restaurant'}
+            </p>
+            <p className="text-gray-400 text-xs leading-relaxed mb-6">
+              You cannot place a new order at a different restaurant until the restaurant owner marks your current order as <strong>Completed</strong>.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                to={`/track/${activeOrder.id}`}
+                className="btn-primary text-center w-full"
+              >
+                Track My Current Order
+              </Link>
+              <button
+                onClick={() => navigate(-1)}
+                className="btn-secondary w-full"
+              >
+                Go Back
+              </button>
+            </div>
+          </motion.div>
         </div>
       </PageTransition>
     );
