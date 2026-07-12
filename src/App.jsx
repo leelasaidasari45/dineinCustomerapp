@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -7,17 +7,32 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import AuthModal from './components/auth/AuthModal';
 import TableMate from './components/agent/TableMate';
-import HomePage from './pages/HomePage';
-import RestaurantPage from './pages/RestaurantPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import OrderPreviewPage from './pages/OrderPreviewPage';
-import OrderSuccessPage from './pages/OrderSuccessPage';
-import OrderTrackingPage from './pages/OrderTrackingPage';
-import OrderHistoryPage from './pages/OrderHistoryPage';
-import ProfilePage from './pages/ProfilePage';
 import { useAuthStore } from './store/authStore';
 import RatingBarrier from './components/order/RatingBarrier';
+
+// ── Lazy-loaded pages ─────────────────────────────────────────────────────────
+// Each page is split into its own JS chunk and only downloaded when first visited.
+const HomePage          = lazy(() => import('./pages/HomePage'));
+const RestaurantPage    = lazy(() => import('./pages/RestaurantPage'));
+const CartPage          = lazy(() => import('./pages/CartPage'));
+const CheckoutPage      = lazy(() => import('./pages/CheckoutPage'));
+const OrderPreviewPage  = lazy(() => import('./pages/OrderPreviewPage'));
+const OrderSuccessPage  = lazy(() => import('./pages/OrderSuccessPage'));
+const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage'));
+const OrderHistoryPage  = lazy(() => import('./pages/OrderHistoryPage'));
+const ProfilePage       = lazy(() => import('./pages/ProfilePage'));
+
+// ── Minimal page loader shown while a lazy chunk is downloading ───────────────
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+        <p className="text-gray-400 text-sm font-medium">Loading…</p>
+      </div>
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -28,17 +43,19 @@ function ScrollToTop() {
 function AnimatedRoutes() {
   const location = useLocation();
   return (
-    <Routes location={location} key={location.key}>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/restaurant/:id" element={<RestaurantPage />} />
-      <Route path="/cart" element={<CartPage />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/checkout/summary" element={<OrderPreviewPage />} />
-      <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
-      <Route path="/track/:orderId" element={<OrderTrackingPage />} />
-      <Route path="/orders" element={<OrderHistoryPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes location={location} key={location.key}>
+        <Route path="/"                    element={<HomePage />} />
+        <Route path="/restaurant/:id"      element={<RestaurantPage />} />
+        <Route path="/cart"                element={<CartPage />} />
+        <Route path="/checkout"            element={<CheckoutPage />} />
+        <Route path="/checkout/summary"    element={<OrderPreviewPage />} />
+        <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+        <Route path="/track/:orderId"      element={<OrderTrackingPage />} />
+        <Route path="/orders"              element={<OrderHistoryPage />} />
+        <Route path="/profile"             element={<ProfilePage />} />
+      </Routes>
+    </Suspense>
   );
 }
 
