@@ -36,18 +36,35 @@ export default function RestaurantPage() {
   const { menuItems, categories, loading: mLoading } = useMenuItems(id);
   const { activeOrder, loading: activeOrderLoading } = useActiveOrder();
   const [activeCategory, setActiveCategory] = useState('');
+  const [dietFilter, setDietFilter] = useState('all'); // 'all' | 'veg' | 'non-veg'
   const sectionRefs = useRef({});
 
-  // Set first category as active when loaded
-  useEffect(() => {
-    if (categories.length > 0 && !activeCategory) {
-      setActiveCategory(categories[0]);
+  // Filter categories and group items based on diet filter
+  const grouped = categories.reduce((acc, cat) => {
+    const itemsOfCat = menuItems.filter((item) => {
+      if (item.category !== cat) return false;
+      if (dietFilter === 'veg' && !item.is_veg) return false;
+      if (dietFilter === 'non-veg' && item.is_veg) return false;
+      return true;
+    });
+    if (itemsOfCat.length > 0) {
+      acc[cat] = itemsOfCat;
     }
-  }, [categories]);
+    return acc;
+  }, {});
+
+  const activeCategories = categories.filter((cat) => grouped[cat] && grouped[cat].length > 0);
+
+  // Set first category as active when loaded or activeCategories change
+  useEffect(() => {
+    if (activeCategories.length > 0 && (!activeCategory || !activeCategories.includes(activeCategory))) {
+      setActiveCategory(activeCategories[0]);
+    }
+  }, [activeCategories]);
 
   // Scroll-spy: observe sections
   useEffect(() => {
-    if (categories.length === 0) return;
+    if (activeCategories.length === 0) return;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -64,7 +81,7 @@ export default function RestaurantPage() {
     });
 
     return () => observer.disconnect();
-  }, [categories]);
+  }, [activeCategories]);
 
   const scrollToCategory = (cat) => {
     const el = sectionRefs.current[cat];
@@ -150,10 +167,7 @@ export default function RestaurantPage() {
     );
   }
 
-  const grouped = categories.reduce((acc, cat) => {
-    acc[cat] = menuItems.filter((item) => item.category === cat);
-    return acc;
-  }, {});
+  // Grouped and activeCategories calculated above
 
   return (
     <PageTransition>
@@ -213,12 +227,54 @@ export default function RestaurantPage() {
         </div>
 
         {/* Category tabs */}
-        {categories.length > 0 && (
+        {activeCategories.length > 0 && (
           <MenuCategoryTabs
-            categories={categories}
+            categories={activeCategories}
             activeCategory={activeCategory}
             onSelect={scrollToCategory}
           />
+        )}
+
+        {/* Veg/Non-veg filter toggles */}
+        {!mLoading && categories.length > 0 && (
+          <div className="max-w-4xl mx-auto px-4 pt-6 flex gap-2">
+            <button
+              onClick={() => setDietFilter('all')}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all duration-200 ${
+                dietFilter === 'all'
+                  ? 'bg-dark-800 text-white shadow-sm shadow-dark-800/10'
+                  : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setDietFilter('veg')}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
+                dietFilter === 'veg'
+                  ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/10'
+                  : 'bg-white border border-emerald-100 text-emerald-600 hover:bg-emerald-50/30'
+              }`}
+            >
+              <span className="inline-flex w-3.5 h-3.5 border border-emerald-500 rounded items-center justify-center bg-white">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              </span>
+              Veg
+            </button>
+            <button
+              onClick={() => setDietFilter('non-veg')}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
+                dietFilter === 'non-veg'
+                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/10'
+                  : 'bg-white border border-red-100 text-red-600 hover:bg-red-50/30'
+              }`}
+            >
+              <span className="inline-flex w-3.5 h-3.5 border border-red-500 rounded items-center justify-center bg-white">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              </span>
+              Non-Veg
+            </button>
+          </div>
         )}
 
         {/* Menu */}
@@ -230,8 +286,24 @@ export default function RestaurantPage() {
               <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">No menu items available</p>
             </div>
+          ) : activeCategories.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+              <span className="text-4xl">🥗</span>
+              <h3 className="font-heading font-bold text-dark-800 text-lg mt-3 mb-1">
+                No items match your filter
+              </h3>
+              <p className="text-gray-400 text-xs">
+                Try switching the toggle to "All" or a different option
+              </p>
+              <button
+                onClick={() => setDietFilter('all')}
+                className="mt-4 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-colors"
+              >
+                Show All Items
+              </button>
+            </div>
           ) : (
-            categories.map((cat) => (
+            activeCategories.map((cat) => (
               <div
                 key={cat}
                 ref={(el) => (sectionRefs.current[cat] = el)}
