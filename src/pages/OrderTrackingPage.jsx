@@ -67,7 +67,7 @@ export default function OrderTrackingPage() {
             </Link>
             <div>
               <h1 className="font-heading font-bold text-xl text-dark-800">Order Tracking</h1>
-              <p className="text-gray-500 text-sm">#{orderId.slice(0, 8).toUpperCase()}</p>
+              <p className="text-gray-500 text-sm">{order.order_code || `#${orderId.slice(0, 8).toUpperCase()}`}</p>
             </div>
           </div>
 

@@ -166,7 +166,12 @@ export default function OrderSuccessPage() {
               className="card p-5 mb-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-heading font-bold text-dark-800">Order Details</h3>
+                <div>
+                  <h3 className="font-heading font-bold text-dark-800">Order Details</h3>
+                  {order.order_code && (
+                    <p className="text-gray-400 text-xs mt-0.5 font-bold">ID: {order.order_code}</p>
+                  )}
+                </div>
                 <span className={`px-3 py-1 text-xs font-semibold rounded-full
                   ${order.status === 'cancelled' 
                     ? 'bg-red-50 text-red-600' 

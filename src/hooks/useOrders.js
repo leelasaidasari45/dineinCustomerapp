@@ -82,6 +82,28 @@ export async function createOrder({
   numGuests,
   selectedTableIds,
 }) {
+  // Generate a unique order_code: DINE + 4 random digits
+  let orderCode = '';
+  let isUnique = false;
+  let attempts = 0;
+  
+  while (!isUnique && attempts < 10) {
+    const randomDigits = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    orderCode = `DINE${randomDigits}`;
+    
+    // Check if exists
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('order_code', orderCode)
+      .maybeSingle();
+      
+    if (!existing) {
+      isUnique = true;
+    }
+    attempts++;
+  }
+
   // Insert order
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -97,6 +119,7 @@ export async function createOrder({
       payment_status: 'advance_paid',
       payment_reference: paymentReference,
       num_guests: numGuests,
+      order_code: orderCode,
     })
     .select()
     .single();

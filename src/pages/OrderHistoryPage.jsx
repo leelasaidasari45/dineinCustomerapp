@@ -99,9 +99,16 @@ export default function OrderHistoryPage() {
                           </p>
 
                           {/* Date + time */}
-                          <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDateTime(order.created_at)}
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {formatDateTime(order.created_at)}
+                            </span>
+                            {order.order_code && (
+                              <span className="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                {order.order_code}
+                              </span>
+                            )}
                           </div>
                         </div>
 
