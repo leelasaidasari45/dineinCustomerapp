@@ -9,6 +9,7 @@ import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { useRestaurant } from '../hooks/useRestaurants';
 import { createOrder } from '../hooks/useOrders';
+import { openRazorpayModal } from '../lib/razorpay';
 import { formatCurrency, formatDate, formatTime } from '../utils/formatters';
 
 // ── Step indicator ────────────────────────────────────────────
@@ -101,31 +102,44 @@ export default function OrderPreviewPage() {
   const handlePayment = async () => {
     setPaying(true);
     
-    // Simulate brief network delay for processing payment
-    setTimeout(async () => {
-      try {
-        const mockPaymentId = `pay_mock_${Math.random().toString(36).substring(2, 11)}`;
-        const order = await createOrder({
-          customerId: user.id,
-          restaurantId,
-          cartItems: items,
-          arrivalTime: arrivalDate,
-          estimatedReadyTime: arrivalDate,
-          totalAmount: cartTotal,
-          advancePaidAmount: advanceAmount,
-          remainingAmount,
-          paymentReference: mockPaymentId,
-          numGuests,
-          selectedTableIds,
-        });
-        clearCart();
-        toast.success('Payment Successful! Order placed. 🎉');
-        navigate(`/order-success/${order.id}`);
-      } catch (err) {
-        toast.error(`Order creation failed: ${err.message}`);
+    const displayName = customer?.name || user?.user_metadata?.full_name || '';
+    const displayPhone = customer?.phone || '';
+
+    openRazorpayModal({
+      amount: advanceAmount,
+      orderName: `Dine-in Pre-order at ${restaurantName}`,
+      customerName: displayName,
+      customerEmail: user?.email || '',
+      customerPhone: displayPhone,
+      onSuccess: async (response) => {
+        try {
+          // Create actual order in Supabase with verified payment reference
+          const order = await createOrder({
+            customerId: user.id,
+            restaurantId,
+            cartItems: items,
+            arrivalTime: arrivalDate,
+            estimatedReadyTime: arrivalDate,
+            totalAmount: cartTotal,
+            advancePaidAmount: advanceAmount,
+            remainingAmount,
+            paymentReference: response.razorpay_payment_id,
+            numGuests,
+            selectedTableIds,
+          });
+          clearCart();
+          toast.success('Payment Successful! Order placed. 🎉');
+          navigate(`/order-success/${order.id}`);
+        } catch (err) {
+          toast.error(`Order registration failed: ${err.message}`);
+          setPaying(false);
+        }
+      },
+      onFailure: (errorMsg) => {
+        toast.error(errorMsg || 'Payment failed or cancelled.');
         setPaying(false);
       }
-    }, 1500);
+    });
   };
 
   return (
