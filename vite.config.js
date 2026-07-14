@@ -35,6 +35,8 @@ function localApiPlugin() {
           const apiName = url.pathname.replace('/api/', '')
           const filePath = path.resolve(__dirname, 'api', `${apiName}.js`)
 
+          console.log(`[Local API] 🚀 Received ${req.method} ${req.url}`);
+
           if (fs.existsSync(filePath)) {
             try {
               // Load the serverless function module dynamically via Vite SSR
@@ -83,10 +85,12 @@ function localApiPlugin() {
                 },
                 json(data) {
                   this.setHeader('Content-Type', 'application/json')
+                  console.log(`[Local API] ✅ Response ${this.statusCode} for ${req.url}`);
                   res.end(JSON.stringify(data))
                   return this;
                 },
                 end(data) {
+                  console.log(`[Local API] ✅ Response ${this.statusCode} (end) for ${req.url}`);
                   res.end(data)
                   return this;
                 }
@@ -96,12 +100,14 @@ function localApiPlugin() {
               await handler(mockReq, mockRes)
               return
             } catch (err) {
-              console.error(`Error executing API ${apiName}:`, err)
+              console.error(`[Local API] ❌ Error executing API ${apiName}:`, err)
               res.statusCode = 500
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ error: err.message || 'Internal Server Error' }))
               return
             }
+          } else {
+            console.warn(`[Local API] ⚠️ File not found for API path: ${filePath}`);
           }
         }
         next()
