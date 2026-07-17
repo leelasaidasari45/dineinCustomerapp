@@ -173,6 +173,18 @@ const FALLBACK_MENUS = {
     { name: 'Red Velvet Pastry', price: '150' },
     { name: 'Vanilla Ice Cream scoop', price: '90' },
     { name: 'Mango Milkshake', price: '140' }
+  ],
+  'the gourmet couch': [
+    { name: 'Paneer Butter Masala', price: '369' },
+    { name: 'Paneer Tikka Masala', price: '369' },
+    { name: 'Paneer Do Pyaza', price: '369' },
+    { name: 'Kadai Paneer', price: '369' }
+  ],
+  'vaibhavam': [
+    { name: 'Paneer Butter Masala', price: '280' },
+    { name: 'Chicken Biryani', price: '320' },
+    { name: 'Masala Dosa', price: '110' },
+    { name: 'Filter Coffee', price: '50' }
   ]
 };
 
@@ -286,7 +298,9 @@ function ruleEngine(history, ctx) {
     'Mehfil Restaurant', 'Absolute Barbecues', 'Barbeque Nation', 'Concu', 'Roastery Coffee House',
     'Cream Stone', 'Exotica', 'SodaBottleOpenerWala', 'Olive Bistro', 'Flea Bazaar Cafe',
     'Santosh Dhaba', 'Nanking Restaurant', 'Ohris Jiva Imperia', 'Gusto Latino', 'Wok to Walk',
-    'Sri Sai Balaji Restaurant'
+    'Sri Sai Balaji Restaurant', 'Cafe Niloufer', 'Bawarchi', 'Shadab Cafe', 'Tatva', 'Subhan Bakery',
+    'Simply South', 'Mandil', 'Peshawri', 'Flea Bazaar', 'Ohris Tansen', 'Gulaab Singh Sweets',
+    'The Gourmet Couch', 'N Grill', 'RedChilli', 'vaibhavam'
   ];
 
   const allKnownNames = dbRestaurants.length > 0 ? dbRestaurants : fallbackNames;
@@ -303,16 +317,22 @@ function ruleEngine(history, ctx) {
     }
   }
 
+  const stopWords = ['the', 'a', 'an', 'of', 'and', 'or', 'to', 'in', 'at', 'cafe', 'restaurant', 'hotel', 'bar', 'dhaba', 'sweets'];
+
   if (attemptedName) {
-    queryRestaurantName = sortedKnownNames.find(name =>
-      fuzzyMatch(attemptedName, name) ||
-      fuzzyMatch(attemptedName.split(' ')[0], name)
-    );
+    queryRestaurantName = sortedKnownNames.find(name => {
+      const cleanName = name.toLowerCase();
+      const firstWord = cleanName.split(' ')[0];
+      const isStopWord = stopWords.includes(firstWord);
+      return fuzzyMatch(attemptedName, name) ||
+             (!isStopWord && firstWord.length >= 3 && fuzzyMatch(attemptedName, firstWord));
+    });
   } else {
     queryRestaurantName = sortedKnownNames.find(name => {
       const cleanName = name.toLowerCase();
       const firstWord = cleanName.split(' ')[0];
-      return u.includes(cleanName) || (firstWord.length >= 3 && u.includes(firstWord));
+      const isStopWord = stopWords.includes(firstWord);
+      return u.includes(cleanName) || (!isStopWord && firstWord.length >= 3 && u.includes(firstWord));
     });
   }
 

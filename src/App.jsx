@@ -1,6 +1,7 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import Navbar from './components/layout/Navbar';
@@ -61,24 +62,73 @@ function AnimatedRoutes() {
 
 function AppContent() {
   const { initialize } = useAuthStore();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     initialize();
+    
+    // Hide splash screen after 2.5 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="min-h-screen bg-cream-100 flex flex-col">
-      <ScrollToTop />
-      <Navbar />
-      <div className="flex-grow">
-        <ErrorBoundary>
-          <AnimatedRoutes />
-        </ErrorBoundary>
-      </div>
-      <Footer />
-      <AuthModal />
-      <RatingBarrier />
-      <TableMate />
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ 
+              opacity: 0,
+              transition: { duration: 0.5, ease: 'easeInOut' }
+            }}
+            className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center"
+          >
+            {/* Logo image with a premium scale & opacity fade-in animation */}
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
+                transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+              }}
+              className="max-w-[280px] w-full px-6 text-center"
+            >
+              <img 
+                src="/splash.png" 
+                alt="zunoindia" 
+                className="w-full h-auto object-contain mx-auto"
+              />
+            </motion.div>
+            
+            {/* Bounce loader similar to Swiggy/Zomato */}
+            <div className="absolute bottom-16 flex flex-col items-center gap-3">
+              <div className="flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase">zunoindia</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-cream-100 flex flex-col">
+        <ScrollToTop />
+        <Navbar />
+        <div className="flex-grow">
+          <ErrorBoundary>
+            <AnimatedRoutes />
+          </ErrorBoundary>
+        </div>
+        <Footer />
+        <AuthModal />
+        <RatingBarrier />
+        <TableMate />
       <Toaster
         position="top-center"
         toastOptions={{
@@ -101,7 +151,8 @@ function AppContent() {
         }}
         richColors
       />
-    </div>
+      </div>
+    </>
   );
 }
 

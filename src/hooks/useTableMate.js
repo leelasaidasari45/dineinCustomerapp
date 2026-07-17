@@ -839,7 +839,22 @@ function fuzzyMatch(userQuery, restaurantName) {
       return;
     }
 
-    if (bd.restaurant && hasAllQtys && bd.foodConfirmed && bd.date && bd.time && bd.guests) {
+    if (bd.restaurant && hasAllQtys && bd.foodConfirmed && bd.date && bd.time) {
+      if (!bd.guests) {
+        const guestsMsg = {
+          en: "How many guests will be dining?",
+          te: "ఎంతమంది అతిథులు వస్తున్నారు?",
+          hi: "कितने मेहमान आ रहे हैं?"
+        };
+        const txt = guestsMsg[currentLang] || guestsMsg.en;
+        addMessage('agent', txt, currentLang);
+        setAgentState(AGENT_STATE.SPEAKING);
+        onSpeak?.(txt, currentLang, () => {
+          setAgentState(AGENT_STATE.LISTENING);
+        });
+        return;
+      }
+
       const cartStore = useCartStore.getState();
       cartStore.clearCart();
       cartStore.setNumGuests(bd.guests); // Set number of guests in cart store

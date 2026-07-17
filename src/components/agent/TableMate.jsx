@@ -216,7 +216,12 @@ export default function TableMate() {
     if (isMutedRef.current) {
       onDone?.();
     } else {
-      speak(text, lang, onDone);
+      speak(text, lang, () => {
+        onDone?.();
+        if (isSupported && !isMutedRef.current) {
+          startListening(lang);
+        }
+      });
     }
   }, []); // eslint-disable-line
 
