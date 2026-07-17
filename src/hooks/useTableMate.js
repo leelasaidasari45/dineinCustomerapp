@@ -636,8 +636,9 @@ function fuzzyMatch(userQuery, restaurantName) {
         if (matchedItems.length > 0) {
           const newItemsParsed = matchedItems.map(m => {
             const wordNums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-            const beforeRegex = new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+${m.name.toLowerCase()}`);
-            const afterRegex = new RegExp(`${m.name.toLowerCase()}\\s+(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)`);
+            // Support optional filler words like 'portions of', 'plates of', etc. between quantity and item name
+            const beforeRegex = new RegExp(`(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s*(?:portions?|plates?|cups?|glasses?|pieces?|pcs?|orders?|items?)?\\s*(?:of)?\\s*${m.name.toLowerCase()}`);
+            const afterRegex = new RegExp(`${m.name.toLowerCase()}\\s+(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s*(?:portions?|plates?|cups?|glasses?|pieces?|pcs?|orders?|items?)?`);
             const qtyMatch = u.match(beforeRegex) || u.match(afterRegex);
             
             let qty = null;
@@ -648,8 +649,10 @@ function fuzzyMatch(userQuery, restaurantName) {
             return { name: m.name, qty, price: m.price, menuItem: m };
           });
 
-          if (prev.items?.length > 0) {
-            const updatedItems = [...prev.items];
+          // Copy from next.items (which holds updates from awaitingQtyFor block) instead of prev.items
+          const currentItems = next.items || prev.items || [];
+          if (currentItems.length > 0) {
+            const updatedItems = [...currentItems];
             for (const ni of newItemsParsed) {
               const existsIdx = updatedItems.findIndex(item => item.name === ni.name);
               if (existsIdx !== -1) {
@@ -668,7 +671,7 @@ function fuzzyMatch(userQuery, restaurantName) {
           // Clear confirmation flags so we prompt them again for anything else
           next.foodConfirmed = false;
           next.awaitingFoodConfirmation = false;
-        } else if ((next.restaurant || prev.restaurant) && !prev.items?.length) {
+        } else if ((next.restaurant || prev.restaurant) && !next.items?.length) {
           const nounMatch = foodNouns.find(n => u.includes(n));
           const verbMatch = u.match(/(?:order|add|give|have|want|like)\s+(?!to\s+)([a-z0-9]+)/i);
           const attemptedFood = nounMatch || verbMatch?.[1];

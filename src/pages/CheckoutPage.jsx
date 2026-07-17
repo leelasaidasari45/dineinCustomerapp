@@ -39,6 +39,7 @@ export default function CheckoutPage() {
     selectedTableIds, 
     setSelectedTableIds, 
     numGuests,
+    setNumGuests,
     arrivalDate,
     arrivalSlot,
     setArrivalInfo: setStoreArrivalInfo
@@ -231,6 +232,35 @@ export default function CheckoutPage() {
                 initialTime={initialTime}
                 initialDate={initialDate}
               />
+            </div>
+
+            {/* Number of Guests */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-glow">
+                  <span className="text-base">👥</span>
+                </div>
+                <div>
+                  <h2 className="font-heading font-bold text-base text-dark-800">Number of Guests</h2>
+                  <p className="text-gray-400 text-xs">How many people are dining?</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setNumGuests(num)}
+                    className={`h-11 rounded-xl text-sm font-semibold transition-all duration-200 border flex items-center justify-center
+                      ${numGuests === num 
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200' 
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Dining Table Selection */}
