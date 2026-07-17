@@ -331,15 +331,15 @@ export default function CheckoutPage() {
 
               {/* Pay now / pay at restaurant split */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 text-white">
-                  <p className="text-white/75 text-xs font-medium mb-1">Pay Now (50%)</p>
-                  <p className="font-heading font-extrabold text-2xl">{formatCurrency(advanceAmount)}</p>
-                  <p className="text-white/70 text-xs mt-1">via Razorpay</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                  <p className="text-amber-800 text-xs font-bold mb-1 uppercase tracking-wide">Pay Now (50%)</p>
+                  <p className="font-heading font-extrabold text-2xl text-amber-600">{formatCurrency(advanceAmount)}</p>
+                  <p className="text-amber-500/80 text-[11px] font-semibold mt-1">via Razorpay</p>
                 </div>
-                <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4">
-                  <p className="text-gray-400 text-xs font-medium mb-1">Pay at Restaurant (50%)</p>
-                  <p className="font-heading font-extrabold text-2xl text-dark-800">{formatCurrency(remainingAmount)}</p>
-                  <p className="text-gray-400 text-xs mt-1">after dining</p>
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-center">
+                  <p className="text-orange-800 text-xs font-bold mb-1 uppercase tracking-wide">At Restaurant (50%)</p>
+                  <p className="font-heading font-extrabold text-2xl text-orange-600">{formatCurrency(remainingAmount)}</p>
+                  <p className="text-orange-500/80 text-[11px] font-semibold mt-1">after dining</p>
                 </div>
               </div>
 

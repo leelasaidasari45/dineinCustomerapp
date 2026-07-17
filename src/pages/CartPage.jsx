@@ -274,15 +274,15 @@ export default function CartPage() {
                   <p className="text-amber-700 text-xs font-bold uppercase tracking-wide">Payment Split (50/50)</p>
                 </div>
                 <div className="grid grid-cols-2">
-                  <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 text-center">
-                    <p className="text-white/75 text-xs font-medium">Pay Now</p>
-                    <p className="text-white font-extrabold text-lg font-heading">{formatCurrency(advancePay)}</p>
-                    <p className="text-white/60 text-xs">via Razorpay</p>
+                  <div className="bg-amber-50/80 p-3 text-center border-r border-amber-100/50">
+                    <p className="text-amber-800 text-xs font-semibold">Pay Now</p>
+                    <p className="text-amber-600 font-extrabold text-lg font-heading mt-1">{formatCurrency(advancePay)}</p>
+                    <p className="text-amber-500/80 text-[10px] font-medium mt-0.5">via Razorpay</p>
                   </div>
-                  <div className="bg-white p-3 text-center border-l border-amber-100">
-                    <p className="text-gray-400 text-xs font-medium">At Restaurant</p>
-                    <p className="text-dark-800 font-extrabold text-lg font-heading">{formatCurrency(advancePay)}</p>
-                    <p className="text-gray-300 text-xs">after dining</p>
+                  <div className="bg-orange-50/40 p-3 text-center">
+                    <p className="text-orange-800 text-xs font-semibold">At Restaurant</p>
+                    <p className="text-orange-600 font-extrabold text-lg font-heading mt-1">{formatCurrency(advancePay)}</p>
+                    <p className="text-orange-500/80 text-[10px] font-medium mt-0.5">after dining</p>
                   </div>
                 </div>
               </div>
