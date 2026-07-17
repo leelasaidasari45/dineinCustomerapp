@@ -98,18 +98,33 @@ function AppContent() {
               className="flex flex-col items-center justify-center text-center"
             >
               {/* Crop the orange square logo icon from /logo.png */}
-              <div className="w-20 h-20 overflow-hidden relative rounded-3xl mb-4 shadow-sm flex-shrink-0">
+              <div className="w-24 h-24 overflow-hidden relative rounded-[32px] mb-4 flex-shrink-0">
                 <img 
                   src="/logo.png" 
-                  alt="zunoindia icon" 
-                  className="w-20 h-20 object-cover object-left"
+                  alt="ZunoIndia icon" 
+                  className="absolute left-1/2 top-0 -translate-x-1/2 w-[165%] max-w-none h-auto"
                 />
               </div>
 
-              {/* Animated water wave text */}
-              <div className="water-text font-heading font-extrabold text-4xl tracking-wider select-none leading-none">
-                ZunoIndia
-                <span className="water-text-fill">ZunoIndia</span>
+              {/* Animated ZunoIndia text waving like water waves in the sea */}
+              <div className="flex gap-0.5 justify-center mt-2 font-heading font-extrabold text-4xl select-none leading-none tracking-wider">
+                {"ZunoIndia".split("").map((char, index) => (
+                  <motion.span
+                    key={index}
+                    animate={{
+                      y: [0, -12, 0],
+                    }}
+                    transition={{
+                      duration: 1.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: index * 0.12,
+                    }}
+                    className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600"
+                  >
+                    {char}
+                  </motion.span>
+                ))}
               </div>
             </motion.div>
             
