@@ -26,7 +26,7 @@ export default function AuthModal() {
         closeAuthModal();
       } else {
         await signUp({ email: form.email, password: form.password, name: form.name, phone: form.phone });
-        toast.success('Account created! Welcome to Zuno 🍽️');
+        toast.success('Account created! Welcome to zunoindia 🍽️');
         closeAuthModal();
       }
     } catch (err) {

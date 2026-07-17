@@ -65,7 +65,7 @@ export default function OrderHistoryPage() {
             <div className="text-center py-20">
               <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" />
               <h3 className="font-heading font-bold text-xl text-dark-800 mb-2">No orders yet</h3>
-              <p className="text-gray-500 mb-6">Place your first Zuno order!</p>
+              <p className="text-gray-500 mb-6">Place your first zunoindia order!</p>
               <Link to="/" className="btn-primary">Browse Restaurants</Link>
             </div>
           ) : (

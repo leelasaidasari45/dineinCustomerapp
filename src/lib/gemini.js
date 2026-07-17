@@ -1,5 +1,4 @@
-// ── Gemini AI Client for TableMate ──────────────────────────────────────────
-const SYSTEM_PROMPT = `You are TableMate, an intelligent multilingual AI Voice Concierge for Zuno.
+const SYSTEM_PROMPT = `You are TableMate, an intelligent multilingual AI Voice Concierge for zunoindia.
 Help customers book a table and pre-order food through voice.
 Languages: English, Telugu, Hindi — detect automatically and respond in same language.
 Steps: 1) Restaurant 2) Date 3) Time 4) Guests 5) Food order 6) Summary 7) Confirm 8) Payment
@@ -328,7 +327,7 @@ function ruleEngine(history, ctx) {
       } else if (isHindi) {
         return `मुझे "${attemptedName}" रेस्टोरेंट नहीं मिला। उपलब्ध रेस्टोरेंट हैं: ${list}.`;
       } else {
-        return `I couldn't find "${attemptedName}" in Zuno. Available restaurants are: ${list}. Which one would you like to book?`;
+        return `I couldn't find "${attemptedName}" in zunoindia. Available restaurants are: ${list}. Which one would you like to book?`;
       }
     }
 

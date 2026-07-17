@@ -14,10 +14,10 @@ export default function Footer() {
           {/* Logo & Copyright Column */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <img src="/logo.png" alt="Zuno Logo" className="h-10 w-auto object-contain rounded-lg" />
+              <img src="/logo.png" alt="zunoindia Logo" className="h-10 w-auto object-contain rounded-lg" />
             </div>
             <p className="text-xs text-[#93959f]">
-              © {currentYear} Zuno Limited
+              © {currentYear} zunoindia Limited
             </p>
           </div>
 
@@ -26,10 +26,10 @@ export default function Footer() {
             <h4 className="font-bold text-[#282c3f] text-sm md:text-base mb-4 uppercase tracking-wider">Company</h4>
             <ul className="space-y-2.5 text-sm font-medium">
               <li><Link to="#" className="hover:text-[#282c3f] transition-colors">About Us</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Zuno Corporate</Link></li>
+              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">zunoindia Corporate</Link></li>
               <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Careers</Link></li>
               <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Team</Link></li>
-              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Zuno One</Link></li>
+              <li><Link to="#" className="hover:text-[#282c3f] transition-colors">zunoindia One</Link></li>
             </ul>
           </div>
 
@@ -89,10 +89,10 @@ export default function Footer() {
           {/* Life & Social Links Column */}
           <div>
             <div className="mb-6">
-              <h4 className="font-bold text-[#282c3f] text-sm md:text-base mb-4 uppercase tracking-wider">Life at Zuno</h4>
+              <h4 className="font-bold text-[#282c3f] text-sm md:text-base mb-4 uppercase tracking-wider">Life at zunoindia</h4>
               <ul className="space-y-2.5 text-sm font-medium">
-                <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Explore With Zuno</Link></li>
-                <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Zuno News</Link></li>
+                <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Explore With zunoindia</Link></li>
+                <li><Link to="#" className="hover:text-[#282c3f] transition-colors">zunoindia News</Link></li>
                 <li><Link to="#" className="hover:text-[#282c3f] transition-colors">Snackables</Link></li>
               </ul>
             </div>
@@ -120,7 +120,7 @@ export default function Footer() {
         {/* ── Bottom Section (App Download Promo) ── */}
         <div className="border-t border-gray-300 pt-8 mt-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="font-heading font-extrabold text-lg sm:text-xl md:text-2xl text-[#282c3f] text-center md:text-left leading-tight">
-            For better experience, download the Zuno app now
+            For better experience, download the zunoindia app now
           </p>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             {/* App Store Badge */}

@@ -92,7 +92,7 @@ export const AGENT_STATE = {
 };
 
 const GREETING = {
-  en: "Hi! I'm TableMate, your Zuno voice concierge. Which restaurant would you like to visit today?",
+  en: "Hi! I'm TableMate, your zunoindia voice concierge. Which restaurant would you like to visit today?",
   te: "నమస్కారం! నేను TableMate. మీరు ఏ రెస్టారెంట్‌కు వెళ్ళాలనుకుంటున్నారు?",
   hi: "नमस्ते! मैं TableMate हूं। आप किस रेस्टोरेंट में जाना चाहेंगे?",
 };
@@ -315,7 +315,7 @@ function fuzzyMatch(userQuery, restaurantName) {
         key: import.meta.env.VITE_RAZORPAY_KEY || 'rzp_test_placeholder',
         amount: advance * 100,
         currency: 'INR',
-        name: 'Zuno',
+        name: 'zunoindia',
         description: `Table Booking — ${restaurant?.name || 'Restaurant'}`,
         handler: (response) => onPaymentSuccess(advance, total, currentLang, response?.razorpay_payment_id || 'voice_pay_ref'),
         modal: { ondismiss: () => setAgentState(AGENT_STATE.LISTENING) },
@@ -742,7 +742,7 @@ function fuzzyMatch(userQuery, restaurantName) {
     // Check if the user attempted to select an invalid restaurant
     if (bd.restaurantError) {
       const errorMsg = {
-        en: `I couldn't find "${bd.restaurantError}" in Zuno. Available restaurants are: Shadhab, Sri Sai Balaji Restaurant. Which one would you like to book?`,
+        en: `I couldn't find "${bd.restaurantError}" in zunoindia. Available restaurants are: Shadhab, Sri Sai Balaji Restaurant. Which one would you like to book?`,
         te: `నేను "${bd.restaurantError}" రెస్టారెంట్‌ను కనుగొనలేకపోయాను. అందుబాటులో ఉన్నవి: Shadhab, Sri Sai Balaji Restaurant.`,
         hi: `मुझे "${bd.restaurantError}" रेस्टोरेंट नहीं मिला। उपलब्ध रेस्टोरेंट हैं: Shadhab, Sri Sai Balaji Restaurant.`
       };
@@ -839,9 +839,10 @@ function fuzzyMatch(userQuery, restaurantName) {
       return;
     }
 
-    if (bd.restaurant && hasAllQtys && bd.foodConfirmed && bd.date && bd.time) {
+    if (bd.restaurant && hasAllQtys && bd.foodConfirmed && bd.date && bd.time && bd.guests) {
       const cartStore = useCartStore.getState();
       cartStore.clearCart();
+      cartStore.setNumGuests(bd.guests); // Set number of guests in cart store
 
       // Ensure we have menu items mapped
       let menu = menuCacheRef.current[bd.restaurant.id] || [];

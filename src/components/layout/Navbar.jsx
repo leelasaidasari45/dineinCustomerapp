@@ -32,7 +32,7 @@ export default function Navbar() {
 
         {/* ── Logo ── */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
-          <img src="/logo.png" alt="Zuno Logo" className="h-12 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-200" />
+          <img src="/logo.png" alt="zunoindia Logo" className="h-12 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-200" />
         </Link>
 
         {/* ── Nav Links ── */}

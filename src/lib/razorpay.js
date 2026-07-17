@@ -46,7 +46,7 @@ export async function openRazorpayModal({
     key: RAZORPAY_KEY_ID,
     amount: Math.round(amount * 100), // Convert to paise
     currency: 'INR',
-    name: 'Zuno',
+    name: 'zunoindia',
     description: orderName,
     image: '/logo.png',
     handler: (response) => {
