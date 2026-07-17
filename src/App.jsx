@@ -87,7 +87,7 @@ function AppContent() {
             }}
             className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center"
           >
-            {/* Logo image with a premium scale & opacity fade-in animation */}
+            {/* Logo icon and water-wave animated text */}
             <motion.div
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ 
@@ -95,13 +95,22 @@ function AppContent() {
                 opacity: 1,
                 transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
               }}
-              className="max-w-[280px] w-full px-6 text-center"
+              className="flex flex-col items-center justify-center text-center"
             >
-              <img 
-                src="/splash.png" 
-                alt="zunoindia" 
-                className="w-full h-auto object-contain mx-auto"
-              />
+              {/* Crop the orange square logo icon from /logo.png */}
+              <div className="w-20 h-20 overflow-hidden relative rounded-3xl mb-4 shadow-sm flex-shrink-0">
+                <img 
+                  src="/logo.png" 
+                  alt="zunoindia icon" 
+                  className="w-20 h-20 object-cover object-left"
+                />
+              </div>
+
+              {/* Animated water wave text */}
+              <div className="water-text font-heading font-extrabold text-4xl tracking-wider select-none leading-none">
+                ZunoIndia
+                <span className="water-text-fill">ZunoIndia</span>
+              </div>
             </motion.div>
             
             {/* Bounce loader similar to Swiggy/Zomato */}
